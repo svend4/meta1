@@ -11,6 +11,8 @@ export interface CreateFileStep {
   path: string;
   content: string;
   determinism: 'guaranteed';
+  /** Step IDs this step depends on. Empty or absent = depends on none (can run immediately). */
+  depends_on?: string[];
 }
 
 /** A command execution step */
@@ -21,6 +23,8 @@ export interface RunCommandStep {
   command: string;
   args: string[];
   determinism: 'guaranteed' | 'best_effort';
+  /** Step IDs this step depends on. Empty or absent = depends on none (can run immediately). */
+  depends_on?: string[];
 }
 
 export type Step = CreateFileStep | RunCommandStep;
@@ -33,11 +37,13 @@ export interface PlannerSignature {
   generated_at: string; // ISO 8601
 }
 
-/** A deterministic execution plan consisting of sequential steps */
+/** A deterministic execution plan consisting of steps (sequential or DAG-parallel) */
 export interface ExecutionPlan {
   plan_id: string;
   description?: string;
   steps: Step[];
+  /** When 'parallel', steps with depends_on form a DAG; independent steps run concurrently. Default: 'sequential'. */
+  execution_mode?: 'sequential' | 'parallel';
   planner_signature?: PlannerSignature;
 }
 
