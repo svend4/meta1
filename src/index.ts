@@ -35,6 +35,8 @@ export { executeCascade } from './core/repair-cascade.js';
 export { STRATEGIES as REPAIR_STRATEGIES, findMatchingStrategies } from './core/repair-strategies.js';
 export { retryFlakyAssertions } from './core/repair-retry.js';
 export { repairWithLLM } from './core/repair-compiler.js';
+export { ForensicsRecorder, loadForensicsSummary, loadHttpRecords } from './core/forensics.js';
+export type { HttpForensicsRecord, FsForensicsRecord, StepForensicsSummary, RunForensicsSummary } from './core/forensics.js';
 
 // Sandboxes
 export type { Sandbox, ExecResult } from './sandbox/types.js';
