@@ -1,0 +1,59 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://continuum.dev/schemas/dependency-fingerprint.json",
+  "title": "DependencyFingerprint",
+  "description": "Structured snapshot of tool versions, lockfile state, and sandbox image for drift detection",
+  "type": "object",
+  "properties": {
+    "fingerprint_id": {
+      "type": "string",
+      "description": "Unique identifier for this fingerprint"
+    },
+    "captured_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When this fingerprint was captured"
+    },
+    "fingerprint_hash": {
+      "type": "string",
+      "pattern": "^sha256:[a-f0-9]{64}$",
+      "description": "Hash of entire fingerprint for quick comparison"
+    },
+    "tools": {
+      "type": "object",
+      "properties": {
+        "node": { "type": "string" },
+        "npm": { "type": "string" },
+        "git": { "type": "string" },
+        "docker": { "type": "string" }
+      },
+      "required": ["node", "npm"]
+    },
+    "lockfile": {
+      "type": "object",
+      "properties": {
+        "path": { "type": "string" },
+        "hash": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" },
+        "format": { "type": "string", "enum": ["npm", "pnpm", "yarn"] }
+      },
+      "required": ["path", "hash", "format"]
+    },
+    "dependency_tree": {
+      "type": "object",
+      "properties": {
+        "hash": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" },
+        "top_level_count": { "type": "integer" }
+      },
+      "required": ["hash", "top_level_count"]
+    },
+    "sandbox_image": {
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "digest": { "type": "string" }
+      },
+      "required": ["name", "digest"]
+    }
+  },
+  "required": ["fingerprint_id", "captured_at", "fingerprint_hash", "tools"]
+}

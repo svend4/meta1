@@ -1,0 +1,30 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://continuum.dev/schemas/task-spec.json",
+  "title": "TaskSpec",
+  "description": "Specification for a task to be planned and executed by the runtime",
+  "type": "object",
+  "properties": {
+    "task_id": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Unique identifier for this task"
+    },
+    "prompt": {
+      "type": "string",
+      "minLength": 1,
+      "description": "The task description in natural language"
+    },
+    "context": {
+      "type": "object",
+      "description": "Additional context for planning (e.g. existing files, dependencies)",
+      "additionalProperties": true
+    },
+    "model": {
+      "type": "string",
+      "description": "LLM model identifier to use for planning",
+      "default": "claude-sonnet-4-20250514"
+    }
+  },
+  "required": ["task_id", "prompt", "model"]
+}

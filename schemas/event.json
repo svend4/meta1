@@ -1,0 +1,244 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://continuum.dev/schemas/event.json",
+  "title": "Event",
+  "description": "A single event in the append-only JSONL event log",
+  "type": "object",
+  "oneOf": [
+    { "$ref": "#/definitions/RunStartEvent" },
+    { "$ref": "#/definitions/RunCompleteEvent" },
+    { "$ref": "#/definitions/RunFailedEvent" },
+    { "$ref": "#/definitions/PlanGeneratedEvent" },
+    { "$ref": "#/definitions/PlanCacheHitEvent" },
+    { "$ref": "#/definitions/PlanCacheMissEvent" },
+    { "$ref": "#/definitions/PlanLoadedEvent" },
+    { "$ref": "#/definitions/StepStartEvent" },
+    { "$ref": "#/definitions/StepCompleteEvent" },
+    { "$ref": "#/definitions/StepFailedEvent" },
+    { "$ref": "#/definitions/ArtifactHashedEvent" },
+    { "$ref": "#/definitions/ReplayStartEvent" },
+    { "$ref": "#/definitions/ReplayVerifiedEvent" },
+    { "$ref": "#/definitions/ReplayDivergedEvent" }
+  ],
+  "definitions": {
+    "BaseEvent": {
+      "type": "object",
+      "properties": {
+        "ts": {
+          "type": "string",
+          "format": "date-time",
+          "description": "ISO 8601 timestamp"
+        },
+        "run_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "ID of the run this event belongs to"
+        }
+      },
+      "required": ["ts", "run_id"]
+    },
+    "RunStartEvent": {
+      "allOf": [
+        { "$ref": "#/definitions/BaseEvent" },
+        {
+          "type": "object",
+          "properties": {
+            "type": { "const": "run_start" },
+            "task_id": { "type": "string", "format": "uuid" },
+            "prompt": { "type": "string" },
+            "model": { "type": "string" }
+          },
+          "required": ["type", "task_id", "prompt"]
+        }
+      ]
+    },
+    "RunCompleteEvent": {
+      "allOf": [
+        { "$ref": "#/definitions/BaseEvent" },
+        {
+          "type": "object",
+          "properties": {
+            "type": { "const": "run_complete" },
+            "duration_ms": { "type": "integer" },
+            "plan_hash": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" },
+            "run_hash": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" }
+          },
+          "required": ["type", "duration_ms", "plan_hash", "run_hash"]
+        }
+      ]
+    },
+    "RunFailedEvent": {
+      "allOf": [
+        { "$ref": "#/definitions/BaseEvent" },
+        {
+          "type": "object",
+          "properties": {
+            "type": { "const": "run_failed" },
+            "error": { "type": "string" },
+            "failed_step_id": { "type": "string" }
+          },
+          "required": ["type", "error"]
+        }
+      ]
+    },
+    "PlanGeneratedEvent": {
+      "allOf": [
+        { "$ref": "#/definitions/BaseEvent" },
+        {
+          "type": "object",
+          "properties": {
+            "type": { "const": "plan_generated" },
+            "plan_hash": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" },
+            "step_count": { "type": "integer" }
+          },
+          "required": ["type", "plan_hash", "step_count"]
+        }
+      ]
+    },
+    "PlanCacheHitEvent": {
+      "allOf": [
+        { "$ref": "#/definitions/BaseEvent" },
+        {
+          "type": "object",
+          "properties": {
+            "type": { "const": "plan_cache_hit" },
+            "cache_key": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" },
+            "plan_hash": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" }
+          },
+          "required": ["type", "cache_key", "plan_hash"]
+        }
+      ]
+    },
+    "PlanCacheMissEvent": {
+      "allOf": [
+        { "$ref": "#/definitions/BaseEvent" },
+        {
+          "type": "object",
+          "properties": {
+            "type": { "const": "plan_cache_miss" },
+            "cache_key": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" },
+            "reason": { "type": "string", "enum": ["not_found"] }
+          },
+          "required": ["type", "cache_key", "reason"]
+        }
+      ]
+    },
+    "PlanLoadedEvent": {
+      "allOf": [
+        { "$ref": "#/definitions/BaseEvent" },
+        {
+          "type": "object",
+          "properties": {
+            "type": { "const": "plan_loaded" },
+            "source": { "type": "string", "enum": ["file", "cache"] },
+            "path": { "type": "string" }
+          },
+          "required": ["type", "source"]
+        }
+      ]
+    },
+    "StepStartEvent": {
+      "allOf": [
+        { "$ref": "#/definitions/BaseEvent" },
+        {
+          "type": "object",
+          "properties": {
+            "type": { "const": "step_start" },
+            "step_id": { "type": "string" },
+            "step_type": { "type": "string", "enum": ["create_file", "run_command"] },
+            "step_index": { "type": "integer" }
+          },
+          "required": ["type", "step_id", "step_type", "step_index"]
+        }
+      ]
+    },
+    "StepCompleteEvent": {
+      "allOf": [
+        { "$ref": "#/definitions/BaseEvent" },
+        {
+          "type": "object",
+          "properties": {
+            "type": { "const": "step_complete" },
+            "step_id": { "type": "string" },
+            "artifact_hash": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" },
+            "duration_ms": { "type": "integer" }
+          },
+          "required": ["type", "step_id", "artifact_hash", "duration_ms"]
+        }
+      ]
+    },
+    "StepFailedEvent": {
+      "allOf": [
+        { "$ref": "#/definitions/BaseEvent" },
+        {
+          "type": "object",
+          "properties": {
+            "type": { "const": "step_failed" },
+            "step_id": { "type": "string" },
+            "error": { "type": "string" },
+            "exit_code": { "type": "integer" }
+          },
+          "required": ["type", "step_id", "error"]
+        }
+      ]
+    },
+    "ArtifactHashedEvent": {
+      "allOf": [
+        { "$ref": "#/definitions/BaseEvent" },
+        {
+          "type": "object",
+          "properties": {
+            "type": { "const": "artifact_hashed" },
+            "step_id": { "type": "string" },
+            "artifact_hash": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" }
+          },
+          "required": ["type", "step_id", "artifact_hash"]
+        }
+      ]
+    },
+    "ReplayStartEvent": {
+      "allOf": [
+        { "$ref": "#/definitions/BaseEvent" },
+        {
+          "type": "object",
+          "properties": {
+            "type": { "const": "replay_start" },
+            "original_run_id": { "type": "string", "format": "uuid" }
+          },
+          "required": ["type", "original_run_id"]
+        }
+      ]
+    },
+    "ReplayVerifiedEvent": {
+      "allOf": [
+        { "$ref": "#/definitions/BaseEvent" },
+        {
+          "type": "object",
+          "properties": {
+            "type": { "const": "replay_verified" },
+            "original_run_id": { "type": "string", "format": "uuid" },
+            "checks_passed": { "type": "integer" },
+            "checks_total": { "type": "integer" }
+          },
+          "required": ["type", "original_run_id", "checks_passed", "checks_total"]
+        }
+      ]
+    },
+    "ReplayDivergedEvent": {
+      "allOf": [
+        { "$ref": "#/definitions/BaseEvent" },
+        {
+          "type": "object",
+          "properties": {
+            "type": { "const": "replay_diverged" },
+            "original_run_id": { "type": "string", "format": "uuid" },
+            "step_id": { "type": "string" },
+            "expected_hash": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" },
+            "actual_hash": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" }
+          },
+          "required": ["type", "original_run_id", "step_id", "expected_hash", "actual_hash"]
+        }
+      ]
+    }
+  }
+}

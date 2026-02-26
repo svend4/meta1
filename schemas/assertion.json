@@ -1,0 +1,135 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://continuum.dev/schemas/assertion.json",
+  "title": "Assertion",
+  "description": "A semantic correctness check that verifies plan results beyond hash integrity",
+  "type": "object",
+  "properties": {
+    "assertion_id": {
+      "type": "string",
+      "description": "Unique identifier for this assertion"
+    },
+    "type": {
+      "type": "string",
+      "enum": ["exit_code", "file_exists", "file_hash", "file_contains", "command_output", "http_response", "json_schema"],
+      "description": "Type of assertion to execute"
+    },
+    "description": {
+      "type": "string",
+      "description": "Human-readable description of what this assertion verifies"
+    },
+    "spec": {
+      "description": "Type-specific assertion parameters",
+      "oneOf": [
+        { "$ref": "#/definitions/ExitCodeAssertionSpec" },
+        { "$ref": "#/definitions/FileExistsAssertionSpec" },
+        { "$ref": "#/definitions/FileHashAssertionSpec" },
+        { "$ref": "#/definitions/FileContainsAssertionSpec" },
+        { "$ref": "#/definitions/CommandOutputAssertionSpec" },
+        { "$ref": "#/definitions/HttpResponseAssertionSpec" },
+        { "$ref": "#/definitions/JsonSchemaAssertionSpec" }
+      ]
+    },
+    "required": {
+      "type": "boolean",
+      "default": true,
+      "description": "If true, plan fails when this assertion fails"
+    },
+    "stability": {
+      "type": "string",
+      "enum": ["stable", "flaky", "environmental"],
+      "description": "Stability classification affecting retry policy and drift categorization"
+    },
+    "retry": {
+      "type": "object",
+      "properties": {
+        "max_attempts": {
+          "type": "integer",
+          "minimum": 1,
+          "default": 1,
+          "description": "Maximum retry attempts (default 1 for stable, 3 for flaky)"
+        },
+        "backoff_ms": {
+          "type": "integer",
+          "minimum": 0,
+          "default": 0,
+          "description": "Backoff between retries in ms (default 0 for stable, 2000 for flaky)"
+        }
+      }
+    }
+  },
+  "required": ["assertion_id", "type", "description", "spec", "required", "stability"],
+  "definitions": {
+    "ExitCodeAssertionSpec": {
+      "type": "object",
+      "properties": {
+        "type": { "const": "exit_code" },
+        "command": { "type": "string" },
+        "args": { "type": "array", "items": { "type": "string" } },
+        "expected": { "type": "integer" }
+      },
+      "required": ["type", "command", "args", "expected"]
+    },
+    "FileExistsAssertionSpec": {
+      "type": "object",
+      "properties": {
+        "type": { "const": "file_exists" },
+        "path": { "type": "string" }
+      },
+      "required": ["type", "path"]
+    },
+    "FileHashAssertionSpec": {
+      "type": "object",
+      "properties": {
+        "type": { "const": "file_hash" },
+        "path": { "type": "string" },
+        "expected_hash": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" }
+      },
+      "required": ["type", "path", "expected_hash"]
+    },
+    "FileContainsAssertionSpec": {
+      "type": "object",
+      "properties": {
+        "type": { "const": "file_contains" },
+        "path": { "type": "string" },
+        "pattern": { "type": "string" },
+        "regex": { "type": "boolean", "default": false }
+      },
+      "required": ["type", "path", "pattern", "regex"]
+    },
+    "CommandOutputAssertionSpec": {
+      "type": "object",
+      "properties": {
+        "type": { "const": "command_output" },
+        "command": { "type": "string" },
+        "args": { "type": "array", "items": { "type": "string" } },
+        "stdout_contains": { "type": "string" },
+        "stdout_regex": { "type": "string" }
+      },
+      "required": ["type", "command", "args"]
+    },
+    "HttpResponseAssertionSpec": {
+      "type": "object",
+      "properties": {
+        "type": { "const": "http_response" },
+        "method": { "type": "string" },
+        "url": { "type": "string" },
+        "expected_status": { "type": "integer" },
+        "body_contains": { "type": "string" },
+        "startup_command": { "type": "string" },
+        "startup_timeout_ms": { "type": "integer" },
+        "shutdown_after": { "type": "boolean", "default": true }
+      },
+      "required": ["type", "method", "url", "expected_status"]
+    },
+    "JsonSchemaAssertionSpec": {
+      "type": "object",
+      "properties": {
+        "type": { "const": "json_schema" },
+        "path": { "type": "string" },
+        "schema": { "type": "object" }
+      },
+      "required": ["type", "path", "schema"]
+    }
+  }
+}

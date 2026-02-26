@@ -1,0 +1,101 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://continuum.dev/schemas/plan-lineage.json",
+  "title": "PlanLineage",
+  "description": "Tracks the generational history of a plan through mutations, repairs, and benign drift acceptance",
+  "type": "object",
+  "properties": {
+    "parent_plan_hash": {
+      "type": "string",
+      "pattern": "^sha256:[a-f0-9]{64}$",
+      "description": "Hash of the parent plan (absent for generation 0)"
+    },
+    "mutation_type": {
+      "type": "string",
+      "enum": ["original", "repair_deterministic", "repair_llm", "benign_drift_accepted", "manual_edit"],
+      "description": "How this generation was created"
+    },
+    "mutation_reason": {
+      "type": "string",
+      "description": "Human-readable reason for the mutation"
+    },
+    "generation": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Generation number (0 = original, N+1 = each mutation)"
+    },
+    "repair_context": {
+      "type": "object",
+      "description": "Present only for LLM repairs",
+      "properties": {
+        "drift_vectors": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "drift_ids that triggered the repair"
+        },
+        "repair_prompt_hash": {
+          "type": "string",
+          "pattern": "^sha256:[a-f0-9]{64}$"
+        },
+        "repair_signature": {
+          "type": "object",
+          "properties": {
+            "planner_model": { "type": "string" },
+            "planner_version": { "type": "string" },
+            "system_prompt_hash": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" },
+            "generated_at": { "type": "string", "format": "date-time" }
+          },
+          "required": ["planner_model", "system_prompt_hash", "generated_at"]
+        },
+        "mutations_applied": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "type": { "type": "string", "enum": ["update_version", "modify_content", "modify_command", "update_assertion"] },
+              "step_id": { "type": "string" },
+              "description": { "type": "string" },
+              "before_hash": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" },
+              "after_hash": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" }
+            },
+            "required": ["type", "step_id", "description", "before_hash", "after_hash"]
+          }
+        }
+      },
+      "required": ["drift_vectors", "repair_prompt_hash", "repair_signature", "mutations_applied"]
+    },
+    "deterministic_repair": {
+      "type": "object",
+      "description": "Present only for deterministic repairs",
+      "properties": {
+        "strategy_id": { "type": "string" },
+        "drift_vectors": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      },
+      "required": ["strategy_id", "drift_vectors"]
+    },
+    "benign_drift_context": {
+      "type": "object",
+      "description": "Present only for benign drift acceptance",
+      "properties": {
+        "changed_artifacts": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "path": { "type": "string" },
+              "old_hash": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" },
+              "new_hash": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" }
+            },
+            "required": ["path", "old_hash", "new_hash"]
+          }
+        },
+        "assertions_verified": { "type": "boolean" }
+      },
+      "required": ["changed_artifacts", "assertions_verified"]
+    }
+  },
+  "required": ["mutation_type", "generation"]
+}

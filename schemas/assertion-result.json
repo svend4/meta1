@@ -1,0 +1,47 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://continuum.dev/schemas/assertion-result.json",
+  "title": "AssertionResult",
+  "description": "Result of executing a single assertion, including retry information",
+  "type": "object",
+  "properties": {
+    "assertion_id": {
+      "type": "string",
+      "description": "ID of the assertion that was evaluated"
+    },
+    "type": {
+      "type": "string",
+      "enum": ["exit_code", "file_exists", "file_hash", "file_contains", "command_output", "http_response", "json_schema"]
+    },
+    "stability": {
+      "type": "string",
+      "enum": ["stable", "flaky", "environmental"]
+    },
+    "passed": {
+      "type": "boolean",
+      "description": "Whether the assertion ultimately passed"
+    },
+    "attempts": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "Number of attempts (1 if no retry needed)"
+    },
+    "duration_ms": {
+      "type": "integer",
+      "description": "Total time across all attempts"
+    },
+    "expected": {
+      "type": "string",
+      "description": "Expected value (human-readable)"
+    },
+    "actual": {
+      "type": "string",
+      "description": "Actual value observed (human-readable)"
+    },
+    "diff": {
+      "type": "string",
+      "description": "Human-readable diff if failed"
+    }
+  },
+  "required": ["assertion_id", "type", "stability", "passed", "attempts", "duration_ms", "expected", "actual"]
+}
