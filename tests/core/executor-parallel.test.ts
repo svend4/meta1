@@ -294,4 +294,73 @@ describe('executePlan — parallel mode', () => {
     expect(result.artifactHashes).toHaveLength(1);
     expect(result.artifactHashes[0]).toBe(hashString('ok'));
   });
+
+  it('respects maxConcurrency limit', async () => {
+    // 4 independent steps with maxConcurrency=1 should still work correctly
+    const plan = makePlan([
+      { step_id: 'a', type: 'create_file', description: 'A', path: 'a.txt', content: 'a', determinism: 'guaranteed' },
+      { step_id: 'b', type: 'create_file', description: 'B', path: 'b.txt', content: 'b', determinism: 'guaranteed' },
+      { step_id: 'c', type: 'create_file', description: 'C', path: 'c.txt', content: 'c', determinism: 'guaranteed' },
+      { step_id: 'd', type: 'create_file', description: 'D', path: 'd.txt', content: 'd', determinism: 'guaranteed' },
+    ], 'parallel');
+
+    const sandbox = new LocalSandbox(workspaceDir);
+    await sandbox.init();
+    const runId = randomUUID();
+    const logger = new EventLogger(runId);
+
+    const result = await executePlan(plan, sandbox, logger, runId, { maxConcurrency: 1 });
+
+    expect(result.steps).toHaveLength(4);
+    expect(result.steps.every((s) => s.status === 'completed')).toBe(true);
+    expect(result.artifactHashes).toHaveLength(4);
+
+    // All files created
+    expect(readFileSync(join(workspaceDir, 'a.txt'), 'utf8')).toBe('a');
+    expect(readFileSync(join(workspaceDir, 'd.txt'), 'utf8')).toBe('d');
+  });
+
+  it('maxConcurrency=2 handles 4 independent steps in 2 batches', async () => {
+    const plan = makePlan([
+      { step_id: 'a', type: 'create_file', description: 'A', path: 'a.txt', content: 'a', determinism: 'guaranteed' },
+      { step_id: 'b', type: 'create_file', description: 'B', path: 'b.txt', content: 'b', determinism: 'guaranteed' },
+      { step_id: 'c', type: 'create_file', description: 'C', path: 'c.txt', content: 'c', determinism: 'guaranteed' },
+      { step_id: 'd', type: 'create_file', description: 'D', path: 'd.txt', content: 'd', determinism: 'guaranteed' },
+    ], 'parallel');
+
+    const sandbox = new LocalSandbox(workspaceDir);
+    await sandbox.init();
+    const runId = randomUUID();
+    const logger = new EventLogger(runId);
+
+    const result = await executePlan(plan, sandbox, logger, runId, { maxConcurrency: 2 });
+
+    expect(result.steps).toHaveLength(4);
+    expect(result.steps.every((s) => s.status === 'completed')).toBe(true);
+
+    // Check events — should have 4 step_start events
+    const logContent = readFileSync(logger.getPath(), 'utf8');
+    const events = logContent.trim().split('\n').map((l) => JSON.parse(l));
+    const startEvents = events.filter((e: { type: string }) => e.type === 'step_start');
+    expect(startEvents).toHaveLength(4);
+  });
+
+  it('maxConcurrency with dependencies works correctly', async () => {
+    // a → b → c, maxConcurrency=1 (forces sequential through dependency + limit)
+    const plan = makePlan([
+      { step_id: 'a', type: 'create_file', description: 'A', path: 'a.txt', content: 'a', determinism: 'guaranteed' },
+      { step_id: 'b', type: 'create_file', description: 'B', path: 'b.txt', content: 'b', determinism: 'guaranteed', depends_on: ['a'] },
+      { step_id: 'c', type: 'create_file', description: 'C', path: 'c.txt', content: 'c', determinism: 'guaranteed', depends_on: ['b'] },
+    ], 'parallel');
+
+    const sandbox = new LocalSandbox(workspaceDir);
+    await sandbox.init();
+    const runId = randomUUID();
+    const logger = new EventLogger(runId);
+
+    const result = await executePlan(plan, sandbox, logger, runId, { maxConcurrency: 1 });
+
+    expect(result.steps).toHaveLength(3);
+    expect(result.steps.every((s) => s.status === 'completed')).toBe(true);
+  });
 });

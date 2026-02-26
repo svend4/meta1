@@ -12,6 +12,7 @@ import { listCommand } from './list.js';
 import { cacheCommand } from './cache.js';
 import { historyCommand } from './history.js';
 import { forensicsCommand } from './forensics.js';
+import { approveDriftCommand } from './approve-drift.js';
 
 const program = new Command();
 
@@ -34,5 +35,6 @@ program.addCommand(cacheCommand);
 // v3.0 commands
 program.addCommand(historyCommand);
 program.addCommand(forensicsCommand);
+program.addCommand(approveDriftCommand);
 
 program.parse();

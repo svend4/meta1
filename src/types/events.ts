@@ -39,7 +39,7 @@ export interface PlanCacheHitEvent extends BaseEvent {
 export interface PlanCacheMissEvent extends BaseEvent {
   type: 'plan_cache_miss';
   cache_key: `sha256:${string}`;
-  reason: 'not_found';
+  reason: 'not_found' | 'expired';
 }
 
 export interface PlanLoadedEvent extends BaseEvent {

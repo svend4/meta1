@@ -9,6 +9,11 @@ export interface ExecutionResult {
   artifactHashes: `sha256:${string}`[];
 }
 
+export interface ExecutionOptions {
+  /** Maximum number of steps to run concurrently in parallel mode. Default: Infinity (no limit). */
+  maxConcurrency?: number;
+}
+
 /**
  * Execute all steps in a plan using the given sandbox.
  * Supports two modes:
@@ -20,9 +25,10 @@ export async function executePlan(
   sandbox: Sandbox,
   logger: EventLogger,
   runId: string,
+  options?: ExecutionOptions,
 ): Promise<ExecutionResult> {
   if (plan.execution_mode === 'parallel') {
-    return executePlanParallel(plan, sandbox, logger, runId);
+    return executePlanParallel(plan, sandbox, logger, runId, options?.maxConcurrency);
   }
   return executePlanSequential(plan, sandbox, logger, runId);
 }
@@ -178,10 +184,12 @@ async function executePlanParallel(
   sandbox: Sandbox,
   logger: EventLogger,
   runId: string,
+  maxConcurrency?: number,
 ): Promise<ExecutionResult> {
   const steps = plan.steps;
   const stepMap = new Map(steps.map((s) => [s.step_id, s]));
   const stepIndex = new Map(steps.map((s, i) => [s.step_id, i]));
+  const concurrencyLimit = maxConcurrency && maxConcurrency > 0 ? maxConcurrency : Infinity;
 
   const { dependents, inDegree } = buildDependencyGraph(steps);
 
@@ -201,9 +209,8 @@ async function executePlanParallel(
   }
 
   while (readyQueue.length > 0) {
-    // Execute all ready steps concurrently
-    const batch = [...readyQueue];
-    readyQueue = [];
+    // Apply concurrency limit: take only up to concurrencyLimit steps from queue
+    const batch = readyQueue.splice(0, concurrencyLimit);
 
     const promises = batch.map(async (stepId) => {
       const step = stepMap.get(stepId)!;

@@ -5,9 +5,10 @@ export { hashString, hashBuffer, hashObject, computeCacheKey, computeRunHash } f
 export { canonicalJson } from './core/canonical-json.js';
 export { validateExecutionPlan, assertValidPlan, validateTaskSpecData, validateEventData, validateRunSummaryData } from './core/validator.js';
 export { EventLogger, createEvent } from './core/logger.js';
-export { lookupPlan, storePlan, clearCache } from './core/plan-cache.js';
+export { lookupPlan, storePlan, clearCache, clearExpired, getCacheStats, DEFAULT_CACHE_TTL_MS } from './core/plan-cache.js';
 export { generatePlan, SYSTEM_PROMPT_HASH } from './core/planner.js';
-export { executePlan } from './core/executor.js';
+export { executePlan, buildDependencyGraph } from './core/executor.js';
+export type { ExecutionOptions } from './core/executor.js';
 export { run, executeFromFile } from './core/runner.js';
 export { replay } from './core/replayer.js';
 
@@ -37,6 +38,9 @@ export { retryFlakyAssertions } from './core/repair-retry.js';
 export { repairWithLLM } from './core/repair-compiler.js';
 export { ForensicsRecorder, loadForensicsSummary, loadHttpRecords } from './core/forensics.js';
 export type { HttpForensicsRecord, FsForensicsRecord, StepForensicsSummary, RunForensicsSummary } from './core/forensics.js';
+
+// IO Signature
+export { inferIOSignature, validateIOSignature } from './core/io-signature.js';
 
 // Sandboxes
 export type { Sandbox, ExecResult } from './sandbox/types.js';
