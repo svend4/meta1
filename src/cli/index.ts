@@ -26,15 +26,17 @@ import { statusCommand } from './status.js';
 import { lintCommand } from './lint.js';
 import { compareCommand } from './compare.js';
 import { searchCommand } from './search.js';
+import { metricsCommand } from './metrics.js';
+import { timelineCommand } from './timeline.js';
 
 const program = new Command();
 
 program
   .name('continuum')
   .description(
-    'Deterministic runtime for AI-generated execution plans. Run once, cache the plan, replay forever. v3.6: Lint, structured log, compare, annotations, search.',
+    'Deterministic runtime for AI-generated execution plans. Run once, cache the plan, replay forever. v3.7: Rate limiter, checkpoints, metrics, timeline, notifications.',
   )
-  .version('3.6.0');
+  .version('3.7.0');
 
 program.addCommand(runCommand);
 program.addCommand(executeCommand);
@@ -68,5 +70,8 @@ program.addCommand(statusCommand);
 program.addCommand(lintCommand);
 program.addCommand(compareCommand);
 program.addCommand(searchCommand);
+// v3.7 commands
+program.addCommand(metricsCommand);
+program.addCommand(timelineCommand);
 
 program.parse();

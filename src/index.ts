@@ -97,6 +97,18 @@ export type { StepAnnotation, RunAnnotations } from './core/annotations.js';
 export { searchRuns } from './core/search.js';
 export type { SearchResult, SearchOptions } from './core/search.js';
 
+// v3.7: Rate Limiter, Checkpoints, Metrics, Timeline, Notifications
+export { RateLimiter, RateLimitExceededError } from './core/rate-limiter.js';
+export type { RateLimiterConfig, RateLimiterStats } from './core/rate-limiter.js';
+export { saveCheckpoint, loadCheckpoint, removeCheckpoint, hasCheckpoint, getRemainingSteps, validateCheckpoint } from './core/checkpoint.js';
+export type { ExecutionCheckpoint } from './core/checkpoint.js';
+export { computeMetrics, formatMetrics } from './core/metrics.js';
+export type { AggregateMetrics, MetricsOptions } from './core/metrics.js';
+export { buildTimeline, formatTimeline } from './core/timeline.js';
+export type { RunTimeline, TimelineEntry } from './core/timeline.js';
+export { sendNotifications } from './core/notifications.js';
+export type { NotificationChannelConfig, DesktopChannelConfig, EmailChannelConfig, JsonFileChannelConfig, NotificationResult } from './core/notifications.js';
+
 // v3.4: Init, Conditions, Compose
 export { initProject, generateDefaultConfig } from './core/init.js';
 export type { InitOptions, InitResult } from './core/init.js';
