@@ -120,6 +120,17 @@ export { planToDot } from './core/dot-graph.js';
 export type { DotGraphOptions } from './core/dot-graph.js';
 export { tagRun, untagRun, getRunTags, getRunsByTag, listTags as listRunTags, deleteTag, renameTag } from './core/run-tags.js';
 
+// v3.9: Deep Validation, Step Aliasing, Audit Log, Narrative, Policies
+export { deepValidatePlan, formatDeepValidation } from './core/deep-validate.js';
+export type { DeepValidationReport, DeepValidationFinding, DeepValidationSeverity } from './core/deep-validate.js';
+export { buildAliasMap, resolveAliases, resolveStepRef, listAliases } from './core/step-alias.js';
+export type { AliasMap } from './core/step-alias.js';
+export { audit, readAuditLog, streamAuditLog, getAuditTrail, formatAuditLog } from './core/audit-log.js';
+export type { AuditAction, AuditEntry, AuditQueryOptions } from './core/audit-log.js';
+export { generateNarrative } from './core/narrative.js';
+export { buildPolicyRules, evaluatePolicies, formatViolations, describePolicy } from './core/policy.js';
+export type { ExecutionPolicy, PolicyRule, PolicyContext, PolicyViolation } from './core/policy.js';
+
 // v3.4: Init, Conditions, Compose
 export { initProject, generateDefaultConfig } from './core/init.js';
 export type { InitOptions, InitResult } from './core/init.js';

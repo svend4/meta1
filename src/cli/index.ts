@@ -31,15 +31,18 @@ import { timelineCommand } from './timeline.js';
 import { exportCommand } from './export.js';
 import { archiveCommand } from './archive.js';
 import { tagCommand } from './tag.js';
+import { deepValidateCommand } from './deep-validate.js';
+import { auditCommand, auditTrailCommand } from './audit.js';
+import { narrativeCommand } from './narrative.js';
 
 const program = new Command();
 
 program
   .name('continuum')
   .description(
-    'Deterministic runtime for AI-generated execution plans. Run once, cache the plan, replay forever. v3.8: Export, archive, profiler, DOT graph, run tags.',
+    'Deterministic runtime for AI-generated execution plans. Run once, cache the plan, replay forever. v3.9: Deep validation, step aliases, audit log, narrative, policies.',
   )
-  .version('3.8.0');
+  .version('3.9.0');
 
 program.addCommand(runCommand);
 program.addCommand(executeCommand);
@@ -80,5 +83,10 @@ program.addCommand(timelineCommand);
 program.addCommand(exportCommand);
 program.addCommand(archiveCommand);
 program.addCommand(tagCommand);
+// v3.9 commands
+program.addCommand(deepValidateCommand);
+program.addCommand(auditCommand);
+program.addCommand(auditTrailCommand);
+program.addCommand(narrativeCommand);
 
 program.parse();
