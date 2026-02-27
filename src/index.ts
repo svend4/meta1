@@ -85,6 +85,18 @@ export type { SystemStatus, RecentRun } from './core/status.js';
 export { PluginRegistry, globalRegistry } from './core/plugin.js';
 export type { ContinuumPlugin, BeforePlanContext, AfterPlanContext, BeforeStepContext, AfterStepContext } from './core/plugin.js';
 
+// v3.6: Lint, Structured Log, Compare, Annotations, Search
+export { lintPlan, formatLintResult } from './core/lint.js';
+export type { LintFinding, LintResult, LintSeverity } from './core/lint.js';
+export { StructuredLogger, eventsToStructuredLog, stdoutSink, createArraySink } from './core/structured-log.js';
+export type { StructuredLogEntry, LogLevel, LogSink } from './core/structured-log.js';
+export { compareRuns, formatComparison } from './core/run-compare.js';
+export type { RunComparison, RunBrief, StepComparison, TokenDelta } from './core/run-compare.js';
+export { addAnnotation, loadAnnotations, getStepAnnotations, removeAnnotation, searchAnnotations } from './core/annotations.js';
+export type { StepAnnotation, RunAnnotations } from './core/annotations.js';
+export { searchRuns } from './core/search.js';
+export type { SearchResult, SearchOptions } from './core/search.js';
+
 // v3.4: Init, Conditions, Compose
 export { initProject, generateDefaultConfig } from './core/init.js';
 export type { InitOptions, InitResult } from './core/init.js';

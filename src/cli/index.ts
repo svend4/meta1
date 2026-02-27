@@ -23,15 +23,18 @@ import { doctorCommand } from './doctor.js';
 import { initCommand } from './init.js';
 import { composeCommand } from './compose.js';
 import { statusCommand } from './status.js';
+import { lintCommand } from './lint.js';
+import { compareCommand } from './compare.js';
+import { searchCommand } from './search.js';
 
 const program = new Command();
 
 program
   .name('continuum')
   .description(
-    'Deterministic runtime for AI-generated execution plans. Run once, cache the plan, replay forever. v3.5: Token tracking, query, step cache, status, plugins.',
+    'Deterministic runtime for AI-generated execution plans. Run once, cache the plan, replay forever. v3.6: Lint, structured log, compare, annotations, search.',
   )
-  .version('3.5.0');
+  .version('3.6.0');
 
 program.addCommand(runCommand);
 program.addCommand(executeCommand);
@@ -61,5 +64,9 @@ program.addCommand(initCommand);
 program.addCommand(composeCommand);
 // v3.5 commands
 program.addCommand(statusCommand);
+// v3.6 commands
+program.addCommand(lintCommand);
+program.addCommand(compareCommand);
+program.addCommand(searchCommand);
 
 program.parse();
