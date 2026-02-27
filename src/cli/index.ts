@@ -19,15 +19,16 @@ import { graphCommand } from './graph.js';
 import { validateCommand } from './validate.js';
 import { cleanupCommand } from './cleanup.js';
 import { planDiffCommand } from './plan-diff.js';
+import { doctorCommand } from './doctor.js';
 
 const program = new Command();
 
 program
   .name('continuum')
   .description(
-    'Deterministic runtime for AI-generated execution plans. Run once, cache the plan, replay forever. v3.2: Timeouts, hooks, templates, plan diff.',
+    'Deterministic runtime for AI-generated execution plans. Run once, cache the plan, replay forever. v3.3: Migration, retry, doctor, webhooks, env vars.',
   )
-  .version('3.2.0');
+  .version('3.3.0');
 
 program.addCommand(runCommand);
 program.addCommand(executeCommand);
@@ -50,5 +51,7 @@ program.addCommand(validateCommand);
 program.addCommand(cleanupCommand);
 // v3.2 commands
 program.addCommand(planDiffCommand);
+// v3.3 commands
+program.addCommand(doctorCommand);
 
 program.parse();

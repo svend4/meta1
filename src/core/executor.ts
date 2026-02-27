@@ -541,7 +541,36 @@ async function executeRunCommand(
   step: RunCommandStep,
   sandbox: Sandbox,
 ): Promise<StepOutput> {
-  const result = await sandbox.exec(step.command, step.args);
+  const execOpts = step.env ? { env: step.env } : undefined;
+  const retry = step.retry;
+
+  if (!retry || retry.max_attempts <= 1) {
+    return executeRunCommandOnce(step, sandbox, execOpts);
+  }
+
+  // Retry with exponential backoff
+  let lastErr: Error | undefined;
+  for (let attempt = 1; attempt <= retry.max_attempts; attempt++) {
+    try {
+      return await executeRunCommandOnce(step, sandbox, execOpts);
+    } catch (err: unknown) {
+      lastErr = err instanceof Error ? err : new Error(String(err));
+      if (attempt < retry.max_attempts) {
+        const backoff = retry.backoff_ms * Math.pow(2, attempt - 1);
+        await sleep(backoff);
+      }
+    }
+  }
+
+  throw lastErr!;
+}
+
+async function executeRunCommandOnce(
+  step: RunCommandStep,
+  sandbox: Sandbox,
+  execOpts?: { env: Record<string, string> },
+): Promise<StepOutput> {
+  const result = await sandbox.exec(step.command, step.args, execOpts);
 
   if (result.exitCode !== 0) {
     const err = new Error(
@@ -553,6 +582,10 @@ async function executeRunCommand(
 
   const artifactHash = hashString(result.stdout);
   return { artifactHash };
+}
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 /** Error thrown when a step exceeds its timeout. */

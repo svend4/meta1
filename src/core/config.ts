@@ -3,6 +3,14 @@ import { join, resolve } from 'node:path';
 
 const CONFIG_FILENAME = '.continuumrc.json';
 
+/** Webhook endpoint configuration */
+export interface WebhookConfigEntry {
+  url: string;
+  events?: string[];
+  secret?: string;
+  timeout_ms?: number;
+}
+
 /** Continuum runtime configuration */
 export interface ContinuumConfig {
   model?: string;
@@ -10,7 +18,7 @@ export interface ContinuumConfig {
   sandbox?: 'local' | 'docker';
   docker_image?: string;
   cache?: { ttl_ms?: number };
-  execution?: { max_concurrency?: number };
+  execution?: { max_concurrency?: number; default_timeout_ms?: number };
   repair?: {
     enabled_levels?: (1 | 2 | 3)[];
     timeout_ms?: number;
@@ -24,6 +32,7 @@ export interface ContinuumConfig {
     default_timeout_ms?: number;
     max_retries?: number;
   };
+  webhooks?: WebhookConfigEntry[];
 }
 
 /** Fully resolved config with all defaults applied */
@@ -33,7 +42,7 @@ export interface ResolvedConfig {
   sandbox: 'local' | 'docker';
   docker_image: string;
   cache: { ttl_ms: number };
-  execution: { max_concurrency: number };
+  execution: { max_concurrency: number; default_timeout_ms: number };
   repair: {
     enabled_levels: (1 | 2 | 3)[];
     timeout_ms: number;
@@ -47,6 +56,7 @@ export interface ResolvedConfig {
     default_timeout_ms: number;
     max_retries: number;
   };
+  webhooks: WebhookConfigEntry[];
 }
 
 export const DEFAULT_CONFIG: ResolvedConfig = {
@@ -55,7 +65,7 @@ export const DEFAULT_CONFIG: ResolvedConfig = {
   sandbox: 'local',
   docker_image: 'node:20-slim',
   cache: { ttl_ms: 7 * 24 * 60 * 60 * 1000 },
-  execution: { max_concurrency: 4 },
+  execution: { max_concurrency: 4, default_timeout_ms: 120_000 },
   repair: {
     enabled_levels: [1, 2, 3],
     timeout_ms: 30_000,
@@ -69,6 +79,7 @@ export const DEFAULT_CONFIG: ResolvedConfig = {
     default_timeout_ms: 10_000,
     max_retries: 2,
   },
+  webhooks: [],
 };
 
 /**
@@ -149,6 +160,7 @@ export function resolveConfig(
     repair: { ...DEFAULT_CONFIG.repair, ...merged.repair },
     retention: { ...DEFAULT_CONFIG.retention, ...merged.retention },
     assertions: { ...DEFAULT_CONFIG.assertions, ...merged.assertions },
+    webhooks: merged.webhooks ?? DEFAULT_CONFIG.webhooks,
   };
 }
 

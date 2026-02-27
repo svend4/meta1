@@ -1,3 +1,9 @@
+/** Options for command execution */
+export interface ExecOptions {
+  /** Additional environment variables for this command */
+  env?: Record<string, string>;
+}
+
 /** Result of executing a command in the sandbox */
 export interface ExecResult {
   stdout: string;
@@ -20,7 +26,7 @@ export interface Sandbox {
   readFile(relativePath: string): Promise<string>;
 
   /** Execute a command inside the sandbox */
-  exec(command: string, args: string[]): Promise<ExecResult>;
+  exec(command: string, args: string[], options?: ExecOptions): Promise<ExecResult>;
 
   /** Get the absolute workspace path inside the sandbox */
   getWorkspacePath(): string;

@@ -1,7 +1,7 @@
 import { mkdirSync, writeFileSync, readFileSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { execFileSync } from 'node:child_process';
-import type { Sandbox, ExecResult } from './types.js';
+import type { Sandbox, ExecResult, ExecOptions } from './types.js';
 
 /**
  * Local sandbox: executes steps directly on the host filesystem.
@@ -28,13 +28,14 @@ export class LocalSandbox implements Sandbox {
     return readFileSync(join(this.workspace, relativePath), 'utf8');
   }
 
-  async exec(command: string, args: string[]): Promise<ExecResult> {
+  async exec(command: string, args: string[], options?: ExecOptions): Promise<ExecResult> {
     try {
       const stdout = execFileSync(command, args, {
         cwd: this.workspace,
         encoding: 'utf8',
         timeout: 120_000,
         maxBuffer: 10 * 1024 * 1024,
+        env: options?.env ? { ...process.env, ...options.env } : undefined,
       });
       return { stdout, stderr: '', exitCode: 0 };
     } catch (err: unknown) {

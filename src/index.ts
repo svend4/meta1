@@ -67,7 +67,14 @@ export { extractVariables, validateVariables, applyTemplate } from './core/templ
 export { diffPlans, formatPlanDiff } from './core/plan-diff.js';
 export type { PlanDiffResult, StepDiff, FieldDiff, ChangeType } from './core/plan-diff.js';
 
+// v3.3: Migration, Doctor, Webhooks
+export { migratePlan, needsMigration, migrationWarnings } from './core/migrate.js';
+export { runDoctor } from './core/doctor.js';
+export type { DoctorCheck, DoctorReport } from './core/doctor.js';
+export { sendWebhook, sendAllWebhooks, buildPayload, mapStatusToEvent } from './core/webhook.js';
+export type { WebhookConfig, WebhookPayload, WebhookEventType } from './core/webhook.js';
+
 // Sandboxes
-export type { Sandbox, ExecResult } from './sandbox/types.js';
+export type { Sandbox, ExecResult, ExecOptions } from './sandbox/types.js';
 export { LocalSandbox } from './sandbox/local.js';
 export { DockerSandbox } from './sandbox/docker.js';

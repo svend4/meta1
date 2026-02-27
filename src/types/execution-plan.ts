@@ -3,6 +3,14 @@ import type { ProtectedSurface } from './protected-surface.js';
 import type { PlanLineage } from './plan-lineage.js';
 import type { PlanIOSignature } from './plan-io-signature.js';
 
+/** Retry policy for command steps */
+export interface StepRetryPolicy {
+  /** Maximum number of attempts (including the first). Default: 1 (no retry). */
+  max_attempts: number;
+  /** Initial backoff in milliseconds. Doubles each attempt. Default: 1000. */
+  backoff_ms: number;
+}
+
 /** A file creation step — determinism is always guaranteed */
 export interface CreateFileStep {
   step_id: string;
@@ -29,6 +37,10 @@ export interface RunCommandStep {
   depends_on?: string[];
   /** Maximum execution time in milliseconds. Step is aborted if exceeded. */
   timeout_ms?: number;
+  /** Retry policy for transient failures. Only applies to run_command steps. */
+  retry?: StepRetryPolicy;
+  /** Environment variables passed to the command. Merged with sandbox env. */
+  env?: Record<string, string>;
 }
 
 export type Step = CreateFileStep | RunCommandStep;

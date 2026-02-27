@@ -1,5 +1,5 @@
 import { createRequire } from 'node:module';
-import type { Sandbox, ExecResult } from './types.js';
+import type { Sandbox, ExecResult, ExecOptions } from './types.js';
 
 const require = createRequire(import.meta.url);
 const Docker = require('dockerode') as typeof import('dockerode');
@@ -87,8 +87,11 @@ export class DockerSandbox implements Sandbox {
     return result.stdout;
   }
 
-  async exec(command: string, args: string[]): Promise<ExecResult> {
-    return this.containerExec([command, ...args]);
+  async exec(command: string, args: string[], options?: ExecOptions): Promise<ExecResult> {
+    const envList = options?.env
+      ? Object.entries(options.env).map(([k, v]) => `${k}=${v}`)
+      : undefined;
+    return this.containerExec([command, ...args], envList);
   }
 
   getWorkspacePath(): string {
@@ -112,7 +115,7 @@ export class DockerSandbox implements Sandbox {
     }
   }
 
-  private async containerExec(cmd: string[]): Promise<ExecResult> {
+  private async containerExec(cmd: string[], env?: string[]): Promise<ExecResult> {
     if (!this.container) {
       throw new Error('Sandbox not initialized — call init() first');
     }
@@ -122,6 +125,7 @@ export class DockerSandbox implements Sandbox {
       AttachStdout: true,
       AttachStderr: true,
       WorkingDir: WORKSPACE_MOUNT,
+      ...(env ? { Env: env } : {}),
     });
 
     const stream = await exec.start({ Detach: false, Tty: false });
