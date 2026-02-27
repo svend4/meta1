@@ -4,13 +4,16 @@ import { resolve } from 'node:path';
 import chalk from 'chalk';
 import { loadGenerationPlan } from '../core/lineage.js';
 import { computeLayers } from '../core/dry-run.js';
+import { planToDot } from '../core/dot-graph.js';
 import type { ExecutionPlan } from '../types/execution-plan.js';
 
 export const graphCommand = new Command('graph')
   .description('Visualize a plan\'s dependency graph')
   .argument('<source>', 'Plan hash (sha256:...) or path to plan JSON file')
   .option('--json', 'Output graph as JSON adjacency list')
-  .action((source: string, opts: { json?: boolean }) => {
+  .option('--dot', 'Output as Graphviz DOT format')
+  .option('--lr', 'Use left-to-right layout (with --dot)')
+  .action((source: string, opts: { json?: boolean; dot?: boolean; lr?: boolean }) => {
     try {
       let plan: ExecutionPlan;
 
@@ -31,6 +34,11 @@ export const graphCommand = new Command('graph')
           process.exit(1);
         }
         plan = JSON.parse(readFileSync(filePath, 'utf8'));
+      }
+
+      if (opts.dot) {
+        console.log(planToDot(plan, { rankdir: opts.lr ? 'LR' : 'TB' }));
+        return;
       }
 
       if (opts.json) {

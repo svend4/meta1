@@ -109,6 +109,17 @@ export type { RunTimeline, TimelineEntry } from './core/timeline.js';
 export { sendNotifications } from './core/notifications.js';
 export type { NotificationChannelConfig, DesktopChannelConfig, EmailChannelConfig, JsonFileChannelConfig, NotificationResult } from './core/notifications.js';
 
+// v3.8: Export, Archive, Profiler, DOT Graph, Run Tags
+export { exportRuns } from './core/export.js';
+export type { ExportFormat, ExportOptions } from './core/export.js';
+export { archiveRuns, restoreArchive, listArchives, deleteArchive } from './core/archive.js';
+export type { ArchiveManifest } from './core/archive.js';
+export { StepProfiler, captureSnapshot, formatProfile } from './core/profiler.js';
+export type { StepProfile, RunProfile, ResourceSnapshot } from './core/profiler.js';
+export { planToDot } from './core/dot-graph.js';
+export type { DotGraphOptions } from './core/dot-graph.js';
+export { tagRun, untagRun, getRunTags, getRunsByTag, listTags as listRunTags, deleteTag, renameTag } from './core/run-tags.js';
+
 // v3.4: Init, Conditions, Compose
 export { initProject, generateDefaultConfig } from './core/init.js';
 export type { InitOptions, InitResult } from './core/init.js';

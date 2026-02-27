@@ -28,15 +28,18 @@ import { compareCommand } from './compare.js';
 import { searchCommand } from './search.js';
 import { metricsCommand } from './metrics.js';
 import { timelineCommand } from './timeline.js';
+import { exportCommand } from './export.js';
+import { archiveCommand } from './archive.js';
+import { tagCommand } from './tag.js';
 
 const program = new Command();
 
 program
   .name('continuum')
   .description(
-    'Deterministic runtime for AI-generated execution plans. Run once, cache the plan, replay forever. v3.7: Rate limiter, checkpoints, metrics, timeline, notifications.',
+    'Deterministic runtime for AI-generated execution plans. Run once, cache the plan, replay forever. v3.8: Export, archive, profiler, DOT graph, run tags.',
   )
-  .version('3.7.0');
+  .version('3.8.0');
 
 program.addCommand(runCommand);
 program.addCommand(executeCommand);
@@ -73,5 +76,9 @@ program.addCommand(searchCommand);
 // v3.7 commands
 program.addCommand(metricsCommand);
 program.addCommand(timelineCommand);
+// v3.8 commands
+program.addCommand(exportCommand);
+program.addCommand(archiveCommand);
+program.addCommand(tagCommand);
 
 program.parse();
