@@ -39,15 +39,18 @@ import { snapshotCommand } from './snapshot.js';
 import { workspaceDiffCommand } from './workspace-diff.js';
 import { queueCommand } from './queue.js';
 import { versionCommand } from './version-history.js';
+import { templateCommand } from './template-lib.js';
+import { estimateCommand } from './estimate.js';
+import { envCommand } from './env.js';
 
 const program = new Command();
 
 program
   .name('continuum')
   .description(
-    'Deterministic runtime for AI-generated execution plans. Run once, cache the plan, replay forever. v4.1: Middleware, plan versioning, resource limiter, run queue, output transformers.',
+    'Deterministic runtime for AI-generated execution plans. Run once, cache the plan, replay forever. v4.2: Templates, cost estimator, run graph, environments, constraints.',
   )
-  .version('4.1.0');
+  .version('4.2.0');
 
 program.addCommand(runCommand);
 program.addCommand(executeCommand);
@@ -100,5 +103,9 @@ program.addCommand(workspaceDiffCommand);
 // v4.1 commands
 program.addCommand(queueCommand);
 program.addCommand(versionCommand);
+// v4.2 commands
+program.addCommand(templateCommand);
+program.addCommand(estimateCommand);
+program.addCommand(envCommand);
 
 program.parse();

@@ -155,6 +155,18 @@ export type { RunPriority, QueuedRunStatus, QueuedRun, QueueState } from './core
 export { applyTransformers, registerTransformer, unregisterTransformer, formatTransformResult } from './core/output-transformer.js';
 export type { OutputTransformer, TransformResult } from './core/output-transformer.js';
 
+// v4.2: Template Library, Cost Estimator, Run Graph, Environment Manager, Plan Constraints
+export { saveTemplate, loadTemplate, listTemplates, deleteTemplate, instantiateTemplate, createTemplateFromPlan, validateTemplateParams, formatTemplate } from './core/template-library.js';
+export type { TemplateParam, PlanTemplate, InstantiationResult } from './core/template-library.js';
+export { estimateStepCost, estimatePlanCost, recordTiming, loadTimings, formatCostEstimate } from './core/cost-estimator.js';
+export type { StepCostEstimate, PlanCostEstimate, StepTimingRecord } from './core/cost-estimator.js';
+export { loadRunGraph, addRunNode, addRunDependency, updateRunStatus, getReadyRuns, getExecutionOrder, detectCycles, formatRunGraph } from './core/run-graph.js';
+export type { RunDependency, RunGraphStatus, RunGraphNode, RunGraph } from './core/run-graph.js';
+export { saveEnvironment, loadEnvironment, loadRawEnvironment, listEnvironments, deleteEnvironment, setVariable, removeVariable, resolveEnvVars, promoteEnvironment, formatEnvironment } from './core/env-manager.js';
+export type { EnvVariable, Environment, PromotionResult } from './core/env-manager.js';
+export { checkConstraints, createStrictConstraints, createPermissiveConstraints, formatConstraintResult } from './core/plan-constraint.js';
+export type { PlanConstraint, ConstraintCheck, ConstraintViolation, ConstraintResult } from './core/plan-constraint.js';
+
 // v3.4: Init, Conditions, Compose
 export { initProject, generateDefaultConfig } from './core/init.js';
 export type { InitOptions, InitResult } from './core/init.js';
