@@ -34,15 +34,18 @@ import { tagCommand } from './tag.js';
 import { deepValidateCommand } from './deep-validate.js';
 import { auditCommand, auditTrailCommand } from './audit.js';
 import { narrativeCommand } from './narrative.js';
+import { optimizeCommand } from './optimize.js';
+import { snapshotCommand } from './snapshot.js';
+import { workspaceDiffCommand } from './workspace-diff.js';
 
 const program = new Command();
 
 program
   .name('continuum')
   .description(
-    'Deterministic runtime for AI-generated execution plans. Run once, cache the plan, replay forever. v3.9: Deep validation, step aliases, audit log, narrative, policies.',
+    'Deterministic runtime for AI-generated execution plans. Run once, cache the plan, replay forever. v4.0: Step I/O, snapshots, optimizer, workspace diff, breakpoints.',
   )
-  .version('3.9.0');
+  .version('4.0.0');
 
 program.addCommand(runCommand);
 program.addCommand(executeCommand);
@@ -88,5 +91,9 @@ program.addCommand(deepValidateCommand);
 program.addCommand(auditCommand);
 program.addCommand(auditTrailCommand);
 program.addCommand(narrativeCommand);
+// v4.0 commands
+program.addCommand(optimizeCommand);
+program.addCommand(snapshotCommand);
+program.addCommand(workspaceDiffCommand);
 
 program.parse();

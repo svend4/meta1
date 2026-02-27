@@ -131,6 +131,18 @@ export { generateNarrative } from './core/narrative.js';
 export { buildPolicyRules, evaluatePolicies, formatViolations, describePolicy } from './core/policy.js';
 export type { ExecutionPolicy, PolicyRule, PolicyContext, PolicyViolation } from './core/policy.js';
 
+// v4.0: Step I/O, Workspace Snapshots, Plan Optimizer, Workspace Diff, Breakpoints
+export { buildOutputRegistry, resolveInputs, validateStepIO, inferDependencies, listStepIO } from './core/step-io.js';
+export type { StepOutput, StepInput, StepWithIO, OutputRegistry } from './core/step-io.js';
+export { takeSnapshot, rollbackToSnapshot, diffSnapshot, loadSnapshot, listSnapshots, deleteSnapshot } from './core/workspace-snapshot.js';
+export type { WorkspaceSnapshot, SnapshotFileEntry, SnapshotOptions } from './core/workspace-snapshot.js';
+export { optimizePlan, formatOptimization } from './core/plan-optimizer.js';
+export type { Optimization, OptimizationResult } from './core/plan-optimizer.js';
+export { diffWorkspaces, formatWorkspaceDiff } from './core/workspace-diff.js';
+export type { FileDiff, LineDiff, WorkspaceDiffResult } from './core/workspace-diff.js';
+export { BreakpointManager, createLoggingHandler, createSkipHandler, createAbortHandler, formatBreakpointState } from './core/breakpoint.js';
+export type { BreakpointAction, BreakpointState, BreakpointHandler, BreakpointConfig } from './core/breakpoint.js';
+
 // v3.4: Init, Conditions, Compose
 export { initProject, generateDefaultConfig } from './core/init.js';
 export type { InitOptions, InitResult } from './core/init.js';
