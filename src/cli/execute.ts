@@ -1,8 +1,10 @@
 import { Command } from 'commander';
 import { randomUUID } from 'node:crypto';
+import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import chalk from 'chalk';
 import { executeFromFile } from '../core/runner.js';
+import { analyzePlan } from '../core/dry-run.js';
 import { LocalSandbox } from '../sandbox/local.js';
 import { getDefaultWorkspace } from '../core/paths.js';
 
@@ -10,11 +12,52 @@ export const executeCommand = new Command('execute')
   .description('Execute an existing ExecutionPlan JSON without LLM involvement')
   .argument('<plan_file>', 'Path to plan JSON file')
   .option('--workspace <dir>', 'Output directory')
-  .action(async (planFile: string, opts: { workspace?: string }) => {
+  .option('--dry-run', 'Preview execution without running')
+  .option('--json', 'Output as JSON')
+  .action(async (planFile: string, opts: { workspace?: string; dryRun?: boolean; json?: boolean }) => {
     const planPath = resolve(planFile);
     const workspace = opts.workspace
       ? resolve(opts.workspace)
       : getDefaultWorkspace(randomUUID());
+
+    if (opts.dryRun) {
+      try {
+        const plan = JSON.parse(readFileSync(planPath, 'utf8'));
+        const result = analyzePlan(plan);
+
+        if (opts.json) {
+          console.log(JSON.stringify({ dry_run: true, ...result }, null, 2));
+          process.exit(result.valid ? 0 : 1);
+        }
+
+        console.log(chalk.blue('Execute Dry Run'));
+        console.log(chalk.gray('─'.repeat(50)));
+        console.log(chalk.gray(`Plan:   ${planPath}`));
+        console.log(chalk.gray(`Steps:  ${result.total_steps}`));
+        console.log(chalk.gray(`Layers: ${result.layers}`));
+        console.log();
+
+        for (const step of result.steps) {
+          const icon = step.type === 'create_file' ? chalk.green('F') : chalk.yellow('C');
+          console.log(`  L${step.layer} ${icon} ${step.step_id}`);
+        }
+
+        for (const warn of result.warnings) {
+          console.log(chalk.yellow(`\nWarning: ${warn}`));
+        }
+
+        if (!result.valid) {
+          for (const err of result.errors) {
+            console.error(chalk.red(`Error: ${err}`));
+          }
+          process.exit(1);
+        }
+      } catch (err: unknown) {
+        console.error(chalk.red(err instanceof Error ? err.message : String(err)));
+        process.exit(1);
+      }
+      return;
+    }
 
     const sandbox = new LocalSandbox(workspace);
 

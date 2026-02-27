@@ -3,6 +3,8 @@ import { randomUUID } from 'node:crypto';
 import { resolve } from 'node:path';
 import chalk from 'chalk';
 import { replay } from '../core/replayer.js';
+import { analyzePlan } from '../core/dry-run.js';
+import { loadRunSummary } from '../storage/runs.js';
 import { LocalSandbox } from '../sandbox/local.js';
 import { getDefaultWorkspace } from '../core/paths.js';
 
@@ -13,14 +15,61 @@ export const replayCommand = new Command('replay')
   .option('--heal', 'Attempt to repair drifts via Repair Cascade (v3.0)')
   .option('--forensics', 'Record HTTP calls for post-mortem analysis (v3.0)')
   .option('--api-key <key>', 'Anthropic API key (for --heal Level 3)')
+  .option('--dry-run', 'Preview what replay would do without executing')
   .option('--json', 'Output result as JSON (for CI pipelines)')
   .action(async (runId: string, opts: {
     workspace?: string;
     heal?: boolean;
     forensics?: boolean;
     apiKey?: string;
+    dryRun?: boolean;
     json?: boolean;
   }) => {
+    // Dry-run mode for replay
+    if (opts.dryRun) {
+      try {
+        const original = loadRunSummary(runId);
+        const analysis = analyzePlan(original.plan);
+
+        if (opts.json) {
+          console.log(JSON.stringify({
+            dry_run: true,
+            original_run_id: runId,
+            original_status: original.status,
+            ...analysis,
+          }, null, 2));
+          return;
+        }
+
+        console.log(chalk.blue('Replay Dry Run'));
+        console.log(chalk.gray('─'.repeat(50)));
+        console.log(chalk.gray(`Original:   ${runId}`));
+        console.log(chalk.gray(`Status:     ${original.status}`));
+        console.log(chalk.gray(`Steps:      ${analysis.total_steps}`));
+        console.log(chalk.gray(`Layers:     ${analysis.layers}`));
+        console.log(chalk.gray(`Mode:       ${analysis.execution_mode}`));
+        if (analysis.assertions_count > 0) {
+          console.log(chalk.gray(`Assertions: ${analysis.assertions_count}`));
+        }
+        console.log();
+
+        for (const step of analysis.steps) {
+          const icon = step.type === 'create_file' ? chalk.green('F') : chalk.yellow('C');
+          console.log(`  L${step.layer} ${icon} ${step.step_id}`);
+          console.log(chalk.gray(`     ${step.description}`));
+        }
+
+        for (const warn of analysis.warnings) {
+          console.log(chalk.yellow(`\nWarning: ${warn}`));
+        }
+      } catch (err: unknown) {
+        const msg = err instanceof Error ? err.message : String(err);
+        console.error(chalk.red(msg));
+        process.exit(1);
+      }
+      return;
+    }
+
     const workspace = opts.workspace
       ? resolve(opts.workspace)
       : getDefaultWorkspace(randomUUID());

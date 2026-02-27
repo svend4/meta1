@@ -16,6 +16,8 @@ import { approveDriftCommand } from './approve-drift.js';
 import { editCommand } from './edit.js';
 import { bundleCommand } from './bundle.js';
 import { graphCommand } from './graph.js';
+import { validateCommand } from './validate.js';
+import { cleanupCommand } from './cleanup.js';
 
 const program = new Command();
 
@@ -24,7 +26,7 @@ program
   .description(
     'Deterministic runtime for AI-generated execution plans. Run once, cache the plan, replay forever. v3.0: Assertions, drift detection, repair cascade.',
   )
-  .version('3.0.0');
+  .version('3.1.0');
 
 program.addCommand(runCommand);
 program.addCommand(executeCommand);
@@ -42,5 +44,8 @@ program.addCommand(approveDriftCommand);
 program.addCommand(editCommand);
 program.addCommand(bundleCommand);
 program.addCommand(graphCommand);
+// v3.1 commands
+program.addCommand(validateCommand);
+program.addCommand(cleanupCommand);
 
 program.parse();

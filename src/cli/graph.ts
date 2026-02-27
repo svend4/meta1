@@ -3,7 +3,8 @@ import { readFileSync, existsSync } from 'node:fs';
 import { resolve } from 'node:path';
 import chalk from 'chalk';
 import { loadGenerationPlan } from '../core/lineage.js';
-import type { ExecutionPlan, Step } from '../types/execution-plan.js';
+import { computeLayers } from '../core/dry-run.js';
+import type { ExecutionPlan } from '../types/execution-plan.js';
 
 export const graphCommand = new Command('graph')
   .description('Visualize a plan\'s dependency graph')
@@ -114,45 +115,3 @@ export const graphCommand = new Command('graph')
     }
   });
 
-/**
- * Compute topological layers — steps at the same level can run in parallel.
- */
-function computeLayers(steps: Step[]): Step[][] {
-  if (steps.length === 0) return [];
-
-  const ids = new Set(steps.map((s) => s.step_id));
-  const stepMap = new Map(steps.map((s) => [s.step_id, s]));
-  const inDeg = new Map<string, number>();
-  const dependents = new Map<string, string[]>();
-
-  for (const step of steps) {
-    inDeg.set(step.step_id, 0);
-    dependents.set(step.step_id, []);
-  }
-
-  for (const step of steps) {
-    for (const dep of step.depends_on ?? []) {
-      if (!ids.has(dep)) continue;
-      dependents.get(dep)!.push(step.step_id);
-      inDeg.set(step.step_id, (inDeg.get(step.step_id) ?? 0) + 1);
-    }
-  }
-
-  const layers: Step[][] = [];
-  let ready = steps.filter((s) => inDeg.get(s.step_id) === 0);
-
-  while (ready.length > 0) {
-    layers.push(ready);
-    const nextReady: Step[] = [];
-    for (const step of ready) {
-      for (const child of dependents.get(step.step_id) ?? []) {
-        const newDeg = inDeg.get(child)! - 1;
-        inDeg.set(child, newDeg);
-        if (newDeg === 0) nextReady.push(stepMap.get(child)!);
-      }
-    }
-    ready = nextReady;
-  }
-
-  return layers;
-}

@@ -51,6 +51,17 @@ export type { PlanBundle } from './core/plan-bundle.js';
 // IO Signature
 export { inferIOSignature, validateIOSignature } from './core/io-signature.js';
 
+// v3.1: Config, Dry-Run, Preflight, Retention, Watch
+export { loadConfig, loadConfigFile, findConfigFile, resolveConfig, DEFAULT_CONFIG } from './core/config.js';
+export type { ContinuumConfig, ResolvedConfig } from './core/config.js';
+export { analyzePlan, computeLayers } from './core/dry-run.js';
+export type { DryRunResult, DryRunStepPreview } from './core/dry-run.js';
+export { runPreflight } from './core/preflight.js';
+export type { CheckResult, CheckStatus, ValidationReport } from './core/preflight.js';
+export { findCleanupTargets, executeCleanup, cleanup } from './core/retention.js';
+export type { CleanupTarget, CleanupResult, CleanupOptions } from './core/retention.js';
+export { watchDirectory, matchGlob } from './core/watcher.js';
+
 // Sandboxes
 export type { Sandbox, ExecResult } from './sandbox/types.js';
 export { LocalSandbox } from './sandbox/local.js';
