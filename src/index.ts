@@ -143,6 +143,18 @@ export type { FileDiff, LineDiff, WorkspaceDiffResult } from './core/workspace-d
 export { BreakpointManager, createLoggingHandler, createSkipHandler, createAbortHandler, formatBreakpointState } from './core/breakpoint.js';
 export type { BreakpointAction, BreakpointState, BreakpointHandler, BreakpointConfig } from './core/breakpoint.js';
 
+// v4.1: Middleware, Plan Versioning, Resource Limiter, Run Queue, Output Transformers
+export { MiddlewarePipeline, createLoggingMiddleware, createEnvMiddleware, createTimingMiddleware, createSkipMiddleware, createMiddlewareContext } from './core/middleware.js';
+export type { MiddlewareContext, StepMiddleware } from './core/middleware.js';
+export { createPlanVersion, loadPlanHistory, loadPlanVersion, computeSemanticDiff, formatPlanHistory } from './core/plan-version.js';
+export type { PlanVersion, PlanChange, PlanHistory } from './core/plan-version.js';
+export { ResourceLimiter } from './core/resource-limiter.js';
+export type { ResourceLimits, ResourceUsage, LimitCheck } from './core/resource-limiter.js';
+export { enqueueRun, dequeueNext, completeQueuedRun, failQueuedRun, cancelQueuedRun, reprioritizeRun, listQueue, getQueueStats, purgeQueue, formatQueue, loadQueue } from './core/run-queue.js';
+export type { RunPriority, QueuedRunStatus, QueuedRun, QueueState } from './core/run-queue.js';
+export { applyTransformers, registerTransformer, unregisterTransformer, formatTransformResult } from './core/output-transformer.js';
+export type { OutputTransformer, TransformResult } from './core/output-transformer.js';
+
 // v3.4: Init, Conditions, Compose
 export { initProject, generateDefaultConfig } from './core/init.js';
 export type { InitOptions, InitResult } from './core/init.js';

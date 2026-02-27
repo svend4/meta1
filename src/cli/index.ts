@@ -37,15 +37,17 @@ import { narrativeCommand } from './narrative.js';
 import { optimizeCommand } from './optimize.js';
 import { snapshotCommand } from './snapshot.js';
 import { workspaceDiffCommand } from './workspace-diff.js';
+import { queueCommand } from './queue.js';
+import { versionCommand } from './version-history.js';
 
 const program = new Command();
 
 program
   .name('continuum')
   .description(
-    'Deterministic runtime for AI-generated execution plans. Run once, cache the plan, replay forever. v4.0: Step I/O, snapshots, optimizer, workspace diff, breakpoints.',
+    'Deterministic runtime for AI-generated execution plans. Run once, cache the plan, replay forever. v4.1: Middleware, plan versioning, resource limiter, run queue, output transformers.',
   )
-  .version('4.0.0');
+  .version('4.1.0');
 
 program.addCommand(runCommand);
 program.addCommand(executeCommand);
@@ -95,5 +97,8 @@ program.addCommand(narrativeCommand);
 program.addCommand(optimizeCommand);
 program.addCommand(snapshotCommand);
 program.addCommand(workspaceDiffCommand);
+// v4.1 commands
+program.addCommand(queueCommand);
+program.addCommand(versionCommand);
 
 program.parse();
