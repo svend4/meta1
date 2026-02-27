@@ -6,7 +6,8 @@ export { canonicalJson } from './core/canonical-json.js';
 export { validateExecutionPlan, assertValidPlan, validateTaskSpecData, validateEventData, validateRunSummaryData } from './core/validator.js';
 export { EventLogger, createEvent } from './core/logger.js';
 export { lookupPlan, storePlan, clearCache, clearExpired, getCacheStats, DEFAULT_CACHE_TTL_MS } from './core/plan-cache.js';
-export { generatePlan, SYSTEM_PROMPT_HASH } from './core/planner.js';
+export { generatePlan, generatePlanWithUsage, estimateCost, SYSTEM_PROMPT_HASH } from './core/planner.js';
+export type { PlanGenerationResult } from './core/planner.js';
 export { executePlan, buildDependencyGraph, StepTimeoutError } from './core/executor.js';
 export type { ExecutionOptions, ExecutionHooks, ProgressEvent } from './core/executor.js';
 export { run, executeFromFile } from './core/runner.js';
@@ -73,6 +74,16 @@ export { runDoctor } from './core/doctor.js';
 export type { DoctorCheck, DoctorReport } from './core/doctor.js';
 export { sendWebhook, sendAllWebhooks, buildPayload, mapStatusToEvent } from './core/webhook.js';
 export type { WebhookConfig, WebhookPayload, WebhookEventType } from './core/webhook.js';
+
+// v3.5: Token tracking, Query, Step cache, Status, Plugins
+export { queryRuns, computeRunStats } from './storage/query.js';
+export type { RunQuery, RunStats } from './storage/query.js';
+export { computeStepInputHash, lookupStepCache, storeStepCache, clearStepCache, getStepCacheStats } from './core/step-cache.js';
+export type { StepCacheEntry } from './core/step-cache.js';
+export { getSystemStatus, formatStatus } from './core/status.js';
+export type { SystemStatus, RecentRun } from './core/status.js';
+export { PluginRegistry, globalRegistry } from './core/plugin.js';
+export type { ContinuumPlugin, BeforePlanContext, AfterPlanContext, BeforeStepContext, AfterStepContext } from './core/plugin.js';
 
 // v3.4: Init, Conditions, Compose
 export { initProject, generateDefaultConfig } from './core/init.js';

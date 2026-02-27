@@ -54,6 +54,7 @@ export type {
   RunStatus,
   StepResult,
   Environment,
+  TokenUsage,
 } from './run-summary.js';
 
 // v3.0 types

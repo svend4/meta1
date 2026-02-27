@@ -8,7 +8,8 @@ import type { Sandbox } from '../sandbox/types.js';
 import { EventLogger, createEvent } from './logger.js';
 import { hashObject, computeRunHash } from './hasher.js';
 import { lookupPlan, storePlan } from './plan-cache.js';
-import { generatePlan, SYSTEM_PROMPT_HASH } from './planner.js';
+import { generatePlanWithUsage, SYSTEM_PROMPT_HASH } from './planner.js';
+import type { TokenUsage } from '../types/run-summary.js';
 import { assertValidPlan } from './validator.js';
 import { executePlan } from './executor.js';
 import { executeAssertions } from './asserter.js';
@@ -48,6 +49,7 @@ export async function run(
   let plan: ExecutionPlan;
   let planSource: PlanSource;
   let cacheKey: `sha256:${string}` | undefined;
+  let tokenUsage: TokenUsage | undefined;
 
   try {
     // Step 1: Acquire plan (cache → LLM → fail)
@@ -55,6 +57,7 @@ export async function run(
     plan = acquired.plan;
     planSource = acquired.source;
     cacheKey = acquired.cacheKey;
+    tokenUsage = acquired.tokenUsage;
 
     // Step 2: Initialize sandbox
     await sandbox.init();
@@ -100,6 +103,7 @@ export async function run(
         steps,
         workspace: options.workspace,
         dependency_fingerprint: fingerprint,
+        token_usage: tokenUsage,
       };
 
       saveRunSummary(summary);
@@ -159,6 +163,7 @@ export async function run(
       assertions_total: assertionsTotal,
       assertion_results: assertionResults,
       dependency_fingerprint: fingerprint,
+      token_usage: tokenUsage,
     };
 
     saveRunSummary(summary);
@@ -272,6 +277,7 @@ interface AcquiredPlan {
   plan: ExecutionPlan;
   source: PlanSource;
   cacheKey?: `sha256:${string}`;
+  tokenUsage?: TokenUsage;
 }
 
 async function acquirePlan(
@@ -313,8 +319,8 @@ async function acquirePlan(
     }
   }
 
-  // Generate via LLM
-  const plan = await generatePlan(task, { apiKey: options.apiKey });
+  // Generate via LLM (v3.5: now captures token usage)
+  const { plan, tokenUsage } = await generatePlanWithUsage(task, { apiKey: options.apiKey });
   const planHash = hashObject(plan);
 
   logger.log(createEvent('plan_generated', runId, {
@@ -325,8 +331,8 @@ async function acquirePlan(
   // Store in cache
   if (useCache) {
     const cacheKey = storePlan(plan, cacheParams);
-    return { plan, source: 'llm', cacheKey };
+    return { plan, source: 'llm', cacheKey, tokenUsage };
   }
 
-  return { plan, source: 'llm' };
+  return { plan, source: 'llm', tokenUsage };
 }

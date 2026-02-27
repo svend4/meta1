@@ -57,4 +57,18 @@ export interface RunSummary {
   assertions_total?: number;
   assertion_results?: AssertionResult[];
   dependency_fingerprint?: DependencyFingerprint;
+
+  // v3.5 fields
+  /** LLM token usage from plan generation. Only present when plan_source is 'llm'. */
+  token_usage?: TokenUsage;
+}
+
+/** LLM token usage and estimated cost */
+export interface TokenUsage {
+  input_tokens: number;
+  output_tokens: number;
+  /** Estimated cost in USD based on model pricing */
+  estimated_cost_usd?: number;
+  /** Model ID used for generation */
+  model?: string;
 }

@@ -1,6 +1,7 @@
 import Anthropic from '@anthropic-ai/sdk';
 import type { TaskSpec } from '../types/task-spec.js';
 import type { ExecutionPlan, PlannerSignature } from '../types/execution-plan.js';
+import type { TokenUsage } from '../types/run-summary.js';
 import { hashString } from './hasher.js';
 import { assertValidPlan } from './validator.js';
 
@@ -68,15 +69,38 @@ export interface PlannerOptions {
   apiKey?: string;
 }
 
+/** Result of plan generation, including the plan and token usage */
+export interface PlanGenerationResult {
+  plan: ExecutionPlan;
+  tokenUsage: TokenUsage;
+}
+
+/** Model pricing per million tokens (USD) */
+const MODEL_PRICING: Record<string, { input: number; output: number }> = {
+  'claude-sonnet-4-20250514': { input: 3, output: 15 },
+  'claude-haiku-4-5-20251001': { input: 0.8, output: 4 },
+  'claude-opus-4-20250514': { input: 15, output: 75 },
+};
+
+/** Estimate cost in USD for token usage */
+export function estimateCost(model: string, inputTokens: number, outputTokens: number): number {
+  // Try exact match first, then prefix match
+  const pricing = MODEL_PRICING[model]
+    ?? Object.entries(MODEL_PRICING).find(([k]) => model.startsWith(k.replace(/-\d{8}$/, '')))?.[1];
+
+  if (!pricing) return 0;
+
+  return (inputTokens * pricing.input + outputTokens * pricing.output) / 1_000_000;
+}
+
 /**
  * Generate an execution plan from a task specification using Claude.
- * v3.0: Now generates plans with assertions, protected surface, and version field.
- * Returns the plan with a planner_signature attached.
+ * v3.5: Now returns PlanGenerationResult with token usage. Backward-compatible wrapper below.
  */
-export async function generatePlan(
+export async function generatePlanWithUsage(
   task: TaskSpec,
   options?: PlannerOptions,
-): Promise<ExecutionPlan> {
+): Promise<PlanGenerationResult> {
   const client = new Anthropic({ apiKey: options?.apiKey });
 
   let userMessage = task.prompt;
@@ -122,7 +146,29 @@ export async function generatePlan(
   };
   validPlan.planner_signature = signature;
 
-  return validPlan;
+  // Capture token usage
+  const inputTokens = response.usage.input_tokens;
+  const outputTokens = response.usage.output_tokens;
+  const tokenUsage: TokenUsage = {
+    input_tokens: inputTokens,
+    output_tokens: outputTokens,
+    estimated_cost_usd: estimateCost(task.model, inputTokens, outputTokens),
+    model: task.model,
+  };
+
+  return { plan: validPlan, tokenUsage };
+}
+
+/**
+ * Generate an execution plan (backward-compatible wrapper).
+ * Use generatePlanWithUsage() to also get token usage.
+ */
+export async function generatePlan(
+  task: TaskSpec,
+  options?: PlannerOptions,
+): Promise<ExecutionPlan> {
+  const result = await generatePlanWithUsage(task, options);
+  return result.plan;
 }
 
 /** Get the system prompt (for testing/inspection) */

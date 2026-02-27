@@ -22,15 +22,16 @@ import { planDiffCommand } from './plan-diff.js';
 import { doctorCommand } from './doctor.js';
 import { initCommand } from './init.js';
 import { composeCommand } from './compose.js';
+import { statusCommand } from './status.js';
 
 const program = new Command();
 
 program
   .name('continuum')
   .description(
-    'Deterministic runtime for AI-generated execution plans. Run once, cache the plan, replay forever. v3.4: Init, profiles, output capture, conditions, compose.',
+    'Deterministic runtime for AI-generated execution plans. Run once, cache the plan, replay forever. v3.5: Token tracking, query, step cache, status, plugins.',
   )
-  .version('3.4.0');
+  .version('3.5.0');
 
 program.addCommand(runCommand);
 program.addCommand(executeCommand);
@@ -58,5 +59,7 @@ program.addCommand(doctorCommand);
 // v3.4 commands
 program.addCommand(initCommand);
 program.addCommand(composeCommand);
+// v3.5 commands
+program.addCommand(statusCommand);
 
 program.parse();

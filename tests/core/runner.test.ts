@@ -75,6 +75,7 @@ function mockLLM(text: string) {
   mockCreate.mockResolvedValueOnce({
     content: [{ type: 'text', text }],
     model: 'claude-sonnet-4-20250514',
+    usage: { input_tokens: 100, output_tokens: 200 },
   });
 }
 
