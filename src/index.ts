@@ -27,6 +27,7 @@ export {
   createBenignDriftGeneration,
   createDeterministicRepairGeneration,
   createLLMRepairGeneration,
+  createManualEditGeneration,
   saveGeneration,
   loadLineage,
   loadGenerationPlan,
@@ -42,6 +43,10 @@ export { diffForensics } from './core/forensics-diff.js';
 export type { ForensicsDiffResult, StepForensicsDiff, HttpDiffEntry } from './core/forensics-diff.js';
 export { loadTag, listTags, resolveTagOrHash } from './cli/freeze.js';
 export type { PlanTag } from './cli/freeze.js';
+
+// Plan bundles
+export { exportBundle, saveBundleToFile, loadBundleFromFile, importBundle } from './core/plan-bundle.js';
+export type { PlanBundle } from './core/plan-bundle.js';
 
 // IO Signature
 export { inferIOSignature, validateIOSignature } from './core/io-signature.js';

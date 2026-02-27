@@ -163,9 +163,11 @@ export function buildDependencyGraph(steps: Step[]): {
   let visited = 0;
   const tempQueue = [...queue];
   const tempDeg = new Map(inDegree);
+  const visitedSet = new Set<string>();
   while (tempQueue.length > 0) {
     const id = tempQueue.shift()!;
     visited++;
+    visitedSet.add(id);
     for (const child of dependents.get(id) ?? []) {
       const newDeg = tempDeg.get(child)! - 1;
       tempDeg.set(child, newDeg);
@@ -173,10 +175,60 @@ export function buildDependencyGraph(steps: Step[]): {
     }
   }
   if (visited !== steps.length) {
-    throw new Error('Dependency cycle detected in plan steps');
+    const cycleSteps = steps
+      .filter((s) => !visitedSet.has(s.step_id))
+      .map((s) => s.step_id);
+    const cycleTrace = traceCycle(cycleSteps, steps);
+    throw new Error(
+      `Dependency cycle detected: ${cycleTrace.join(' → ')}. ` +
+      `All steps in cycle: [${cycleSteps.join(', ')}]`,
+    );
   }
 
   return { dependents, inDegree };
+}
+
+/**
+ * Trace through cycle participants to produce A → B → C → A chain.
+ * Uses DFS from the first unvisited node, following only edges within the cycle set.
+ */
+function traceCycle(cycleStepIds: string[], steps: Step[]): string[] {
+  if (cycleStepIds.length === 0) return [];
+
+  const cycleSet = new Set(cycleStepIds);
+  const depsMap = new Map(steps.map((s) => [s.step_id, s.depends_on ?? []]));
+
+  // DFS to find the actual cycle path
+  const visited = new Set<string>();
+  const path: string[] = [];
+
+  function dfs(id: string): string[] | null {
+    if (path.includes(id)) {
+      // Found the cycle — extract from first occurrence
+      const cycleStart = path.indexOf(id);
+      return [...path.slice(cycleStart), id];
+    }
+    if (visited.has(id)) return null;
+    visited.add(id);
+    path.push(id);
+
+    for (const dep of depsMap.get(id) ?? []) {
+      if (!cycleSet.has(dep)) continue;
+      const result = dfs(dep);
+      if (result) return result;
+    }
+
+    path.pop();
+    return null;
+  }
+
+  for (const startId of cycleStepIds) {
+    const result = dfs(startId);
+    if (result) return result;
+  }
+
+  // Fallback: just list them
+  return [...cycleStepIds, cycleStepIds[0]];
 }
 
 async function executePlanParallel(

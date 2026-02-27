@@ -13,6 +13,9 @@ import { cacheCommand } from './cache.js';
 import { historyCommand } from './history.js';
 import { forensicsCommand } from './forensics.js';
 import { approveDriftCommand } from './approve-drift.js';
+import { editCommand } from './edit.js';
+import { bundleCommand } from './bundle.js';
+import { graphCommand } from './graph.js';
 
 const program = new Command();
 
@@ -36,5 +39,8 @@ program.addCommand(cacheCommand);
 program.addCommand(historyCommand);
 program.addCommand(forensicsCommand);
 program.addCommand(approveDriftCommand);
+program.addCommand(editCommand);
+program.addCommand(bundleCommand);
+program.addCommand(graphCommand);
 
 program.parse();

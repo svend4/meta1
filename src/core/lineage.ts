@@ -85,6 +85,21 @@ export function createLLMRepairGeneration(
   };
 }
 
+/** Create a new generation for manual plan edits */
+export function createManualEditGeneration(
+  parentPlanHash: `sha256:${string}`,
+  parentGeneration: number,
+  reason: string,
+  editedSteps: string[],
+): PlanLineage {
+  return {
+    parent_plan_hash: parentPlanHash,
+    mutation_type: 'manual_edit',
+    mutation_reason: `Manual edit: ${reason} (steps: ${editedSteps.join(', ')})`,
+    generation: parentGeneration + 1,
+  };
+}
+
 /** Save a generation to ~/.continuum/generations/<hash>/ */
 export function saveGeneration(
   plan: ExecutionPlan,

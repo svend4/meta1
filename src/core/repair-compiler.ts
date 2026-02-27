@@ -121,17 +121,29 @@ export async function repairWithLLM(
   try {
     const client = new Anthropic({ apiKey: options?.apiKey, maxRetries: 4 });
 
-    const response = await client.messages.create({
-      model,
-      max_tokens: constraints.budget.max_tokens,
-      system: 'You are the Continuum Repair Compiler. Output ONLY valid JSON. No markdown, no explanation.',
-      messages: [
+    // Enforce budget timeout via AbortController
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), constraints.budget.timeout_ms);
+
+    let response: Anthropic.Message;
+    try {
+      response = await client.messages.create(
         {
-          role: 'user',
-          content: `${prompt}\n\nOriginal plan:\n${JSON.stringify(originalPlan, null, 2)}`,
+          model,
+          max_tokens: constraints.budget.max_tokens,
+          system: 'You are the Continuum Repair Compiler. Output ONLY valid JSON. No markdown, no explanation.',
+          messages: [
+            {
+              role: 'user',
+              content: `${prompt}\n\nOriginal plan:\n${JSON.stringify(originalPlan, null, 2)}`,
+            },
+          ],
         },
-      ],
-    });
+        { signal: controller.signal },
+      );
+    } finally {
+      clearTimeout(timeoutId);
+    }
 
     const textBlock = response.content.find((b) => b.type === 'text');
     if (!textBlock || textBlock.type !== 'text') {
@@ -203,8 +215,18 @@ export async function repairWithLLM(
 
     return repairResponse;
   } catch (err: unknown) {
-    console.error('[repair] LLM call failed:', err);
-    // LLM call failed — budget exceeded, timeout, etc.
+    const isTimeout = err instanceof Error && err.name === 'AbortError';
+    const errorMsg = isTimeout
+      ? `Repair budget timeout exceeded (${constraints.budget.timeout_ms}ms)`
+      : (err instanceof Error ? err.message : String(err));
+
+    logger.log(createEvent('repair_plan_received', runId, {
+      repair_id: repairId,
+      repaired_plan_hash: 'sha256:' + '0'.repeat(64) as `sha256:${string}`,
+      mutations: [],
+      error: errorMsg,
+    }));
+
     return null;
   }
 }
