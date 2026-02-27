@@ -12,6 +12,10 @@ export interface StepResult {
   determinism?: 'guaranteed' | 'best_effort';
   error?: string;
   exit_code?: number;
+  /** Captured stdout from run_command steps (when capture_output is enabled). */
+  stdout?: string;
+  /** Captured stderr from run_command steps (when capture_output is enabled). */
+  stderr?: string;
 }
 
 export interface Environment {

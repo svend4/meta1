@@ -3,6 +3,8 @@ import type { StepResult } from '../types/run-summary.js';
 import type { Sandbox } from '../sandbox/types.js';
 import { EventLogger, createEvent } from './logger.js';
 import { hashString } from './hasher.js';
+import { evaluateCondition } from './condition.js';
+import type { ConditionContext } from './condition.js';
 
 export interface ExecutionResult {
   steps: StepResult[];
@@ -71,18 +73,48 @@ async function executePlanSequential(
   let failed = false;
   let completedCount = 0;
   const totalSteps = plan.steps.length;
+  const resultMap = new Map<string, StepResult>();
+
+  const conditionCtx: ConditionContext = {
+    env: process.env as Record<string, string | undefined>,
+    workspacePath: sandbox.getWorkspacePath(),
+    stepResults: resultMap,
+  };
 
   for (let i = 0; i < plan.steps.length; i++) {
     const step = plan.steps[i];
 
     if (failed) {
-      stepResults.push({
+      const skipped: StepResult = {
         step_id: step.step_id,
         type: step.type,
         description: step.description,
         status: 'skipped',
         determinism: step.determinism,
+      };
+      stepResults.push(skipped);
+      resultMap.set(step.step_id, skipped);
+      options?.onProgress?.({
+        type: 'step_skipped',
+        stepId: step.step_id,
+        stepIndex: i,
+        totalSteps,
+        completedSteps: completedCount,
       });
+      continue;
+    }
+
+    // Evaluate step condition
+    if (step.condition && !evaluateCondition(step.condition, conditionCtx)) {
+      const skipped: StepResult = {
+        step_id: step.step_id,
+        type: step.type,
+        description: step.description,
+        status: 'skipped',
+        determinism: step.determinism,
+      };
+      stepResults.push(skipped);
+      resultMap.set(step.step_id, skipped);
       options?.onProgress?.({
         type: 'step_skipped',
         stepId: step.step_id,
@@ -136,9 +168,12 @@ async function executePlanSequential(
         artifact_hash: result.artifactHash,
         duration_ms: duration,
         determinism: step.determinism,
+        ...(result.stdout !== undefined ? { stdout: result.stdout } : {}),
+        ...(result.stderr !== undefined ? { stderr: result.stderr } : {}),
       };
 
       stepResults.push(stepResult);
+      resultMap.set(step.step_id, stepResult);
       completedCount++;
       await options?.hooks?.onStepComplete?.(step, stepResult);
       options?.onProgress?.({
@@ -160,7 +195,7 @@ async function executePlanSequential(
         ...(exitCode !== undefined ? { exit_code: exitCode } : {}),
       }));
 
-      stepResults.push({
+      const failedResult: StepResult = {
         step_id: step.step_id,
         type: step.type,
         description: step.description,
@@ -169,7 +204,9 @@ async function executePlanSequential(
         determinism: step.determinism,
         error,
         exit_code: exitCode,
-      });
+      };
+      stepResults.push(failedResult);
+      resultMap.set(step.step_id, failedResult);
 
       await options?.hooks?.onStepFailed?.(step, error);
       options?.onProgress?.({
@@ -315,8 +352,15 @@ async function executePlanParallel(
 
   const { dependents, inDegree } = buildDependencyGraph(steps);
 
+  // Condition evaluation context
+  const conditionCtx: ConditionContext = {
+    env: process.env as Record<string, string | undefined>,
+    workspacePath: sandbox.getWorkspacePath(),
+    stepResults: new Map<string, StepResult>(),
+  };
+
   // Result containers — indexed by step_id, assembled in plan order at end
-  const resultMap = new Map<string, StepResult>();
+  const resultMap = conditionCtx.stepResults;
   const hashMap = new Map<string, `sha256:${string}`>();
   const completedSet = new Set<string>();
   const failedSet = new Set<string>();
@@ -342,6 +386,25 @@ async function executePlanParallel(
       const deps = step.depends_on ?? [];
       if (deps.some((d) => failedSet.has(d))) {
         failedSet.add(stepId);
+        resultMap.set(stepId, {
+          step_id: stepId,
+          type: step.type,
+          description: step.description,
+          status: 'skipped',
+          determinism: step.determinism,
+        });
+        options?.onProgress?.({
+          type: 'step_skipped',
+          stepId,
+          stepIndex: idx,
+          totalSteps,
+          completedSteps: completedCount,
+        });
+        return;
+      }
+
+      // Evaluate step condition
+      if (step.condition && !evaluateCondition(step.condition, conditionCtx)) {
         resultMap.set(stepId, {
           step_id: stepId,
           type: step.type,
@@ -403,6 +466,8 @@ async function executePlanParallel(
           artifact_hash: result.artifactHash,
           duration_ms: duration,
           determinism: step.determinism,
+          ...(result.stdout !== undefined ? { stdout: result.stdout } : {}),
+          ...(result.stderr !== undefined ? { stderr: result.stderr } : {}),
         };
 
         resultMap.set(stepId, stepResult);
@@ -487,6 +552,8 @@ async function executePlanParallel(
 
 interface StepOutput {
   artifactHash: `sha256:${string}`;
+  stdout?: string;
+  stderr?: string;
 }
 
 /**
@@ -581,7 +648,14 @@ async function executeRunCommandOnce(
   }
 
   const artifactHash = hashString(result.stdout);
-  return { artifactHash };
+  const output: StepOutput = { artifactHash };
+
+  if (step.capture_output) {
+    output.stdout = result.stdout;
+    output.stderr = result.stderr;
+  }
+
+  return output;
 }
 
 function sleep(ms: number): Promise<void> {

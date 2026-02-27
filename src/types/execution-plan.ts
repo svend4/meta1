@@ -3,6 +3,18 @@ import type { ProtectedSurface } from './protected-surface.js';
 import type { PlanLineage } from './plan-lineage.js';
 import type { PlanIOSignature } from './plan-io-signature.js';
 
+/** Condition that must be met for a step to execute. */
+export interface StepCondition {
+  /** Type of condition check. */
+  type: 'env_var' | 'file_exists' | 'step_status';
+  /** For env_var: the variable name. For file_exists: the path. For step_status: the step_id. */
+  target: string;
+  /** Expected value. For env_var: the value (or omit for "is set"). For step_status: 'completed' | 'failed'. */
+  equals?: string;
+  /** Negate the condition. Default: false. */
+  negate?: boolean;
+}
+
 /** Retry policy for command steps */
 export interface StepRetryPolicy {
   /** Maximum number of attempts (including the first). Default: 1 (no retry). */
@@ -23,6 +35,8 @@ export interface CreateFileStep {
   depends_on?: string[];
   /** Maximum execution time in milliseconds. Step is aborted if exceeded. */
   timeout_ms?: number;
+  /** Condition that must be met for this step to run. If not met, step is skipped. */
+  condition?: StepCondition;
 }
 
 /** A command execution step */
@@ -41,6 +55,10 @@ export interface RunCommandStep {
   retry?: StepRetryPolicy;
   /** Environment variables passed to the command. Merged with sandbox env. */
   env?: Record<string, string>;
+  /** When true, stdout and stderr are captured into StepResult. Default: false. */
+  capture_output?: boolean;
+  /** Condition that must be met for this step to run. If not met, step is skipped. */
+  condition?: StepCondition;
 }
 
 export type Step = CreateFileStep | RunCommandStep;

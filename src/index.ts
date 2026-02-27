@@ -52,7 +52,7 @@ export type { PlanBundle } from './core/plan-bundle.js';
 export { inferIOSignature, validateIOSignature } from './core/io-signature.js';
 
 // v3.1: Config, Dry-Run, Preflight, Retention, Watch
-export { loadConfig, loadConfigFile, findConfigFile, resolveConfig, DEFAULT_CONFIG } from './core/config.js';
+export { loadConfig, loadConfigFile, findConfigFile, resolveConfig, listProfiles, DEFAULT_CONFIG } from './core/config.js';
 export type { ContinuumConfig, ResolvedConfig } from './core/config.js';
 export { analyzePlan, computeLayers } from './core/dry-run.js';
 export type { DryRunResult, DryRunStepPreview } from './core/dry-run.js';
@@ -73,6 +73,14 @@ export { runDoctor } from './core/doctor.js';
 export type { DoctorCheck, DoctorReport } from './core/doctor.js';
 export { sendWebhook, sendAllWebhooks, buildPayload, mapStatusToEvent } from './core/webhook.js';
 export type { WebhookConfig, WebhookPayload, WebhookEventType } from './core/webhook.js';
+
+// v3.4: Init, Conditions, Compose
+export { initProject, generateDefaultConfig } from './core/init.js';
+export type { InitOptions, InitResult } from './core/init.js';
+export { evaluateCondition } from './core/condition.js';
+export type { ConditionContext } from './core/condition.js';
+export { composePlans } from './core/compose.js';
+export type { ComposeOptions, ComposeResult } from './core/compose.js';
 
 // Sandboxes
 export type { Sandbox, ExecResult, ExecOptions } from './sandbox/types.js';

@@ -33,6 +33,8 @@ export interface ContinuumConfig {
     max_retries?: number;
   };
   webhooks?: WebhookConfigEntry[];
+  /** Named environment profiles. Each profile overrides the base config. */
+  profiles?: Record<string, ContinuumConfig>;
 }
 
 /** Fully resolved config with all defaults applied */
@@ -129,13 +131,32 @@ export function loadConfigFile(configPath?: string): ContinuumConfig {
 }
 
 /**
- * Resolve final config by merging defaults + file config + CLI overrides.
+ * Get the list of available profile names from a config.
+ */
+export function listProfiles(config: ContinuumConfig): string[] {
+  return Object.keys(config.profiles ?? {});
+}
+
+/**
+ * Resolve final config by merging defaults + file config + profile + CLI overrides.
  */
 export function resolveConfig(
   fileConfig: ContinuumConfig,
   cliOverrides?: Partial<ContinuumConfig>,
+  profileName?: string,
 ): ResolvedConfig {
-  const merged: ContinuumConfig = { ...fileConfig };
+  let merged: ContinuumConfig = { ...fileConfig };
+  // Strip profiles from merged to avoid infinite nesting
+  delete merged.profiles;
+
+  // Apply profile if specified
+  if (profileName && fileConfig.profiles) {
+    const profile = fileConfig.profiles[profileName];
+    if (!profile) {
+      throw new Error(`Unknown profile "${profileName}". Available: ${listProfiles(fileConfig).join(', ') || '(none)'}`);
+    }
+    merged = mergeConfigs(merged, profile);
+  }
 
   // Apply CLI overrides (non-undefined values only)
   if (cliOverrides) {
@@ -165,9 +186,29 @@ export function resolveConfig(
 }
 
 /**
+ * Merge two configs, with overlay taking precedence.
+ */
+function mergeConfigs(base: ContinuumConfig, overlay: ContinuumConfig): ContinuumConfig {
+  const result: ContinuumConfig = { ...base };
+
+  if (overlay.model !== undefined) result.model = overlay.model;
+  if (overlay.workspace_dir !== undefined) result.workspace_dir = overlay.workspace_dir;
+  if (overlay.sandbox !== undefined) result.sandbox = overlay.sandbox;
+  if (overlay.docker_image !== undefined) result.docker_image = overlay.docker_image;
+  if (overlay.cache) result.cache = { ...result.cache, ...overlay.cache };
+  if (overlay.execution) result.execution = { ...result.execution, ...overlay.execution };
+  if (overlay.repair) result.repair = { ...result.repair, ...overlay.repair };
+  if (overlay.retention) result.retention = { ...result.retention, ...overlay.retention };
+  if (overlay.assertions) result.assertions = { ...result.assertions, ...overlay.assertions };
+  if (overlay.webhooks) result.webhooks = overlay.webhooks;
+
+  return result;
+}
+
+/**
  * One-shot: load file + resolve with defaults.
  */
-export function loadConfig(configPath?: string): ResolvedConfig {
+export function loadConfig(configPath?: string, profileName?: string): ResolvedConfig {
   const fileConfig = loadConfigFile(configPath);
-  return resolveConfig(fileConfig);
+  return resolveConfig(fileConfig, undefined, profileName);
 }

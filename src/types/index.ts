@@ -6,6 +6,7 @@ export type {
   RunCommandStep,
   PlannerSignature,
   StepRetryPolicy,
+  StepCondition,
 } from './execution-plan.js';
 
 export { isPlanV3 } from './execution-plan.js';

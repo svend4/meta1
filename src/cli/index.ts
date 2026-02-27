@@ -20,15 +20,17 @@ import { validateCommand } from './validate.js';
 import { cleanupCommand } from './cleanup.js';
 import { planDiffCommand } from './plan-diff.js';
 import { doctorCommand } from './doctor.js';
+import { initCommand } from './init.js';
+import { composeCommand } from './compose.js';
 
 const program = new Command();
 
 program
   .name('continuum')
   .description(
-    'Deterministic runtime for AI-generated execution plans. Run once, cache the plan, replay forever. v3.3: Migration, retry, doctor, webhooks, env vars.',
+    'Deterministic runtime for AI-generated execution plans. Run once, cache the plan, replay forever. v3.4: Init, profiles, output capture, conditions, compose.',
   )
-  .version('3.3.0');
+  .version('3.4.0');
 
 program.addCommand(runCommand);
 program.addCommand(executeCommand);
@@ -53,5 +55,8 @@ program.addCommand(cleanupCommand);
 program.addCommand(planDiffCommand);
 // v3.3 commands
 program.addCommand(doctorCommand);
+// v3.4 commands
+program.addCommand(initCommand);
+program.addCommand(composeCommand);
 
 program.parse();
