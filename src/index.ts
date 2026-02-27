@@ -167,6 +167,18 @@ export type { EnvVariable, Environment, PromotionResult } from './core/env-manag
 export { checkConstraints, createStrictConstraints, createPermissiveConstraints, formatConstraintResult } from './core/plan-constraint.js';
 export type { PlanConstraint, ConstraintCheck, ConstraintViolation, ConstraintResult } from './core/plan-constraint.js';
 
+// v4.3: Event Bus, Retry Policies, Run Isolation, Plan Merge, Dependency Resolver
+export { EventBus, createEventBus } from './core/event-bus.js';
+export type { EventHandler, EventFilter, Subscription, BusStats } from './core/event-bus.js';
+export { defaultRetryPolicy, noRetryPolicy, aggressiveRetryPolicy, computeDelay, shouldRetry, withRetry, formatRetryResult } from './core/retry-policy.js';
+export type { BackoffStrategy, RetryCondition, RetryPolicy, RetryResult, AttemptRecord } from './core/retry-policy.js';
+export { createWorkspace, completeWorkspace, failWorkspace, getWorkspace, listWorkspaces, cleanupWorkspace, cleanupStaleWorkspaces, defaultIsolationConfig, formatWorkspace } from './core/run-isolation.js';
+export type { IsolationMode, IsolationConfig, IsolatedWorkspace, CollectedArtifact } from './core/run-isolation.js';
+export { mergePlans, formatMergeResult } from './core/plan-merge.js';
+export type { MergeConflict, ConflictStrategy, MergeOptions, MergeResult } from './core/plan-merge.js';
+export { resolveDependencies, validateDependencies, formatResolution } from './core/dep-resolver.js';
+export type { InferredDependency, ResolutionResult } from './core/dep-resolver.js';
+
 // v3.4: Init, Conditions, Compose
 export { initProject, generateDefaultConfig } from './core/init.js';
 export type { InitOptions, InitResult } from './core/init.js';

@@ -42,15 +42,17 @@ import { versionCommand } from './version-history.js';
 import { templateCommand } from './template-lib.js';
 import { estimateCommand } from './estimate.js';
 import { envCommand } from './env.js';
+import { mergeCommand } from './merge.js';
+import { resolveCommand } from './resolve-deps.js';
 
 const program = new Command();
 
 program
   .name('continuum')
   .description(
-    'Deterministic runtime for AI-generated execution plans. Run once, cache the plan, replay forever. v4.2: Templates, cost estimator, run graph, environments, constraints.',
+    'Deterministic runtime for AI-generated execution plans. Run once, cache the plan, replay forever. v4.3: Event bus, retry policies, isolation, merge, dep resolver.',
   )
-  .version('4.2.0');
+  .version('4.3.0');
 
 program.addCommand(runCommand);
 program.addCommand(executeCommand);
@@ -107,5 +109,8 @@ program.addCommand(versionCommand);
 program.addCommand(templateCommand);
 program.addCommand(estimateCommand);
 program.addCommand(envCommand);
+// v4.3 commands
+program.addCommand(mergeCommand);
+program.addCommand(resolveCommand);
 
 program.parse();
