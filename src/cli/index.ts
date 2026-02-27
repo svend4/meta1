@@ -50,9 +50,9 @@ const program = new Command();
 program
   .name('continuum')
   .description(
-    'Deterministic runtime for AI-generated execution plans. Run once, cache the plan, replay forever. v4.3: Event bus, retry policies, isolation, merge, dep resolver.',
+    'Deterministic runtime for AI-generated execution plans. Run once, cache the plan, replay forever. v4.4: Timeout manager, run snapshots, lint engine, output aggregator, access control.',
   )
-  .version('4.3.0');
+  .version('4.4.0');
 
 program.addCommand(runCommand);
 program.addCommand(executeCommand);

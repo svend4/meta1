@@ -179,6 +179,18 @@ export type { MergeConflict, ConflictStrategy, MergeOptions, MergeResult } from 
 export { resolveDependencies, validateDependencies, formatResolution } from './core/dep-resolver.js';
 export type { InferredDependency, ResolutionResult } from './core/dep-resolver.js';
 
+// v4.4: Timeout Manager, Run Snapshots, Lint Engine, Output Aggregator, Access Control
+export { TimeoutManager, defaultTimeoutConfig, escalatingTimeoutConfig, formatTimeoutStats } from './core/timeout-manager.js';
+export type { TimeoutAction, EscalationStage, StepTimeoutConfig, TimeoutRecord, TimeoutStats, TimeoutCallback } from './core/timeout-manager.js';
+export { saveRunSnapshot, loadRunSnapshot, listRunSnapshots, deleteRunSnapshot, restoreFromSnapshot, snapshotFromProgress, formatRunSnapshot } from './core/run-snapshot.js';
+export type { SnapshotStepResult, RunSnapshot, SnapshotOptions as RunSnapshotOptions, RestoreResult } from './core/run-snapshot.js';
+export { LintEngine, createDefaultLintEngine, emptyPlanRule, duplicateStepIdRule, missingDependencyRule, unsafeCommandRule, missingDescriptionRule, noTimeoutRule, formatLintEngineResult } from './core/lint-engine.js';
+export type { LintRule, RuleCategory, RuleContext, FixSuggestion, LintEngineConfig, LintEngineResult } from './core/lint-engine.js';
+export { aggregateOutputs, computeSummary, groupOutputs, formatAggregation } from './core/output-aggregator.js';
+export type { StepOutput as AggregatorStepOutput, AggregationStrategy, AggregationConfig, AggregationResult, OutputSummary } from './core/output-aggregator.js';
+export { registerPrincipal, getPrincipal, listPrincipals, removePrincipal, grant, revoke, checkAccess, getEffectivePermissions, getRolePermissions, formatAccessCheck, formatPrincipal } from './core/access-control.js';
+export type { Role, RunPermission, Principal, AclEntry, AccessCheckResult } from './core/access-control.js';
+
 // v3.4: Init, Conditions, Compose
 export { initProject, generateDefaultConfig } from './core/init.js';
 export type { InitOptions, InitResult } from './core/init.js';
