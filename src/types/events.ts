@@ -199,6 +199,7 @@ export interface RepairPlanReceivedEvent extends BaseEvent {
   repair_id: string;
   repaired_plan_hash: `sha256:${string}`;
   mutations: string[];
+  error?: string;
 }
 
 export interface RepairVerifiedEvent extends BaseEvent {

@@ -14,11 +14,13 @@ export const runCommand = new Command('run')
   .option('--workspace <dir>', 'Output directory')
   .option('--no-cache', 'Force LLM call even if cache exists')
   .option('--cache-only', 'Fail if no cached plan (never call LLM)')
+  .option('--json', 'Output result as JSON (for CI pipelines)')
   .action(async (prompt: string, opts: {
     model: string;
     workspace?: string;
     cache: boolean;
     cacheOnly?: boolean;
+    json?: boolean;
   }) => {
     const taskId = randomUUID();
     const workspace = opts.workspace
@@ -34,17 +36,37 @@ export const runCommand = new Command('run')
     const sandbox = new LocalSandbox(workspace);
 
     try {
-      console.log(chalk.blue('Continuum Run'));
-      console.log(chalk.gray(`Task:      ${prompt}`));
-      console.log(chalk.gray(`Model:     ${opts.model}`));
-      console.log(chalk.gray(`Workspace: ${workspace}`));
-      console.log();
+      if (!opts.json) {
+        console.log(chalk.blue('Continuum Run'));
+        console.log(chalk.gray(`Task:      ${prompt}`));
+        console.log(chalk.gray(`Model:     ${opts.model}`));
+        console.log(chalk.gray(`Workspace: ${workspace}`));
+        console.log();
+      }
 
       const summary = await run(task, sandbox, {
         workspace,
         useCache: opts.cache,
         cacheOnly: opts.cacheOnly,
       });
+
+      if (opts.json) {
+        const output = {
+          status: summary.status,
+          run_id: summary.run_id,
+          plan_hash: summary.plan_hash,
+          run_hash: summary.run_hash,
+          plan_source: summary.plan_source,
+          steps: summary.steps.length,
+          duration_ms: summary.duration_ms,
+          assertions_passed: summary.assertions_passed,
+          assertions_total: summary.assertions_total,
+          error: summary.steps.find((s) => s.status === 'failed')?.error,
+        };
+        console.log(JSON.stringify(output, null, 2));
+        if (summary.status === 'failed') process.exit(1);
+        return;
+      }
 
       if (summary.status === 'completed') {
         console.log(chalk.green('Run completed successfully.'));
@@ -65,7 +87,11 @@ export const runCommand = new Command('run')
       }
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);
-      console.error(chalk.red(`Fatal: ${msg}`));
+      if (opts.json) {
+        console.log(JSON.stringify({ status: 'error', error: msg }));
+      } else {
+        console.error(chalk.red(`Fatal: ${msg}`));
+      }
       process.exit(1);
     }
   });

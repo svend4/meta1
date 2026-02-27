@@ -13,11 +13,13 @@ export const replayCommand = new Command('replay')
   .option('--heal', 'Attempt to repair drifts via Repair Cascade (v3.0)')
   .option('--forensics', 'Record HTTP calls for post-mortem analysis (v3.0)')
   .option('--api-key <key>', 'Anthropic API key (for --heal Level 3)')
+  .option('--json', 'Output result as JSON (for CI pipelines)')
   .action(async (runId: string, opts: {
     workspace?: string;
     heal?: boolean;
     forensics?: boolean;
     apiKey?: string;
+    json?: boolean;
   }) => {
     const workspace = opts.workspace
       ? resolve(opts.workspace)
@@ -26,18 +28,47 @@ export const replayCommand = new Command('replay')
     const sandbox = new LocalSandbox(workspace);
 
     try {
-      console.log(chalk.blue('Continuum Replay'));
-      console.log(chalk.gray(`Original:  ${runId}`));
-      console.log(chalk.gray(`Workspace: ${workspace}`));
-      if (opts.heal) console.log(chalk.yellow(`Mode:      --heal (Repair Cascade enabled)`));
-      if (opts.forensics) console.log(chalk.yellow(`Forensics: enabled`));
-      console.log();
+      if (!opts.json) {
+        console.log(chalk.blue('Continuum Replay'));
+        console.log(chalk.gray(`Original:  ${runId}`));
+        console.log(chalk.gray(`Workspace: ${workspace}`));
+        if (opts.heal) console.log(chalk.yellow(`Mode:      --heal (Repair Cascade enabled)`));
+        if (opts.forensics) console.log(chalk.yellow(`Forensics: enabled`));
+        console.log();
+      }
 
       const result = await replay(runId, sandbox, workspace, {
         heal: opts.heal,
         forensics: opts.forensics,
         apiKey: opts.apiKey,
       });
+
+      if (opts.json) {
+        const output = {
+          status: result.summary.status,
+          verdict: result.verdict,
+          replay_run_id: result.summary.run_id,
+          original_run_id: runId,
+          verified: result.verified,
+          checks_passed: result.checksPassed,
+          checks_total: result.checksTotal,
+          divergences: result.divergences.length,
+          drift_vectors: result.driftVectors?.length ?? 0,
+          assertions_passed: result.assertionResults?.filter((r) => r.passed).length,
+          assertions_total: result.assertionResults?.length,
+          new_generation: result.newGeneration ? {
+            plan_hash: result.newGeneration.planHash,
+            generation: result.newGeneration.lineage.generation,
+            mutation_type: result.newGeneration.lineage.mutation_type,
+          } : undefined,
+          duration_ms: result.summary.duration_ms,
+        };
+        console.log(JSON.stringify(output, null, 2));
+        if (result.verdict === 'drifted' || result.verdict === 'repair_failed' || !result.verified) {
+          process.exit(1);
+        }
+        return;
+      }
 
       console.log(chalk.gray(`Replay ID: ${result.summary.run_id}`));
       console.log(chalk.gray(`Checks:    ${result.checksPassed}/${result.checksTotal} passed`));
@@ -53,16 +84,16 @@ export const replayCommand = new Command('replay')
       if (result.verdict) {
         switch (result.verdict) {
           case 'identical':
-            console.log(chalk.green('✅ IDENTICAL — hashes match, assertions pass.'));
+            console.log(chalk.green('IDENTICAL — hashes match, assertions pass.'));
             break;
           case 'benign_drift':
-            console.log(chalk.cyan('✅ BENIGN DRIFT — hashes differ, assertions pass, no protected paths affected.'));
+            console.log(chalk.cyan('BENIGN DRIFT — hashes differ, assertions pass, no protected paths affected.'));
             if (result.newGeneration) {
               console.log(chalk.cyan(`   New generation: gen ${result.newGeneration.lineage.generation} (${result.newGeneration.planHash.slice(0, 19)}...)`));
             }
             break;
           case 'drifted':
-            console.log(chalk.red('❌ DRIFTED — assertions failed or protected paths affected.'));
+            console.log(chalk.red('DRIFTED — assertions failed or protected paths affected.'));
             if (result.driftVectors) {
               for (const d of result.driftVectors) {
                 console.log(chalk.red(`  ${d.category}: ${d.details.expected} → ${d.details.actual} [${d.severity}]`));
@@ -73,13 +104,13 @@ export const replayCommand = new Command('replay')
             }
             break;
           case 'healed':
-            console.log(chalk.green('✅ HEALED — drift repaired successfully.'));
+            console.log(chalk.green('HEALED — drift repaired successfully.'));
             if (result.newGeneration) {
               console.log(chalk.green(`   New generation: gen ${result.newGeneration.lineage.generation} (${result.newGeneration.lineage.mutation_type})`));
             }
             break;
           case 'repair_failed':
-            console.log(chalk.red('❌ REPAIR FAILED — cascade could not resolve all drifts.'));
+            console.log(chalk.red('REPAIR FAILED — cascade could not resolve all drifts.'));
             if (result.driftVectors) {
               for (const d of result.driftVectors) {
                 console.log(chalk.red(`  ${d.category}: ${d.details.expected} → ${d.details.actual}`));
@@ -106,7 +137,11 @@ export const replayCommand = new Command('replay')
       }
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);
-      console.error(chalk.red(`Fatal: ${msg}`));
+      if (opts.json) {
+        console.log(JSON.stringify({ status: 'error', error: msg }));
+      } else {
+        console.error(chalk.red(`Fatal: ${msg}`));
+      }
       process.exit(1);
     }
   });

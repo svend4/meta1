@@ -12,6 +12,30 @@ import { hashString, hashObject } from './hasher.js';
 import { assertValidPlan } from './validator.js';
 import { DEFAULT_REPAIR_CONSTRAINTS } from '../types/repair.js';
 
+/**
+ * Extract JSON from LLM text that may contain markdown fences,
+ * explanatory text, or other noise around the JSON object.
+ */
+export function extractJson(raw: string): string {
+  let text = raw.trim();
+
+  // Strip markdown code fences
+  if (text.startsWith('```')) {
+    text = text.replace(/^```(?:json)?\s*/i, '').replace(/\s*```\s*$/i, '');
+  }
+
+  // If text doesn't start with '{', try to find JSON object boundaries
+  if (!text.startsWith('{')) {
+    const firstBrace = text.indexOf('{');
+    const lastBrace = text.lastIndexOf('}');
+    if (firstBrace !== -1 && lastBrace > firstBrace) {
+      text = text.slice(firstBrace, lastBrace + 1);
+    }
+  }
+
+  return text;
+}
+
 const REPAIR_PROMPT_TEMPLATE = `You are the Continuum Repair Compiler. A verified execution plan has drifted from its expected state.
 
 ORIGINAL PLAN HASH: {PLAN_HASH}
@@ -116,19 +140,29 @@ export async function repairWithLLM(
 
     let parsed: { repaired_plan: unknown; mutations_applied: unknown[] };
     try {
-      let cleanText = textBlock.text.trim();
-      if (cleanText.startsWith('```')) {
-        cleanText = cleanText.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/i, '');
-      }
+      const cleanText = extractJson(textBlock.text);
       parsed = JSON.parse(cleanText);
     } catch {
+      logger.log(createEvent('repair_plan_received', runId, {
+        repair_id: repairId,
+        repaired_plan_hash: 'sha256:' + '0'.repeat(64) as `sha256:${string}`,
+        mutations: [],
+        error: 'Failed to parse LLM response as JSON',
+      }));
       return null;
     }
 
     // Validate the repaired plan
     try {
       assertValidPlan(parsed.repaired_plan);
-    } catch {
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      logger.log(createEvent('repair_plan_received', runId, {
+        repair_id: repairId,
+        repaired_plan_hash: 'sha256:' + '0'.repeat(64) as `sha256:${string}`,
+        mutations: [],
+        error: `Repaired plan failed validation: ${msg}`,
+      }));
       return null;
     }
 
@@ -138,6 +172,12 @@ export async function repairWithLLM(
     // Validate constraints
     const violations = validateRepairConstraints(originalPlan, repairedPlan, mutations, constraints);
     if (violations.length > 0) {
+      logger.log(createEvent('repair_plan_received', runId, {
+        repair_id: repairId,
+        repaired_plan_hash: hashObject(repairedPlan),
+        mutations: mutations.map((m) => `${m.type}:${m.step_id}`),
+        error: `Constraint violations: ${violations.join('; ')}`,
+      }));
       return null;
     }
 
