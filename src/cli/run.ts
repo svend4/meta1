@@ -20,6 +20,8 @@ export const runCommand = new Command('run')
   .option('--dry-run', 'Preview execution plan without running')
   .option('--watch <glob>', 'Re-run on file changes matching glob')
   .option('--config <path>', 'Config file path')
+  .option('--var <key=value...>', 'Template variable (repeatable)', collectVar, {})
+  .option('--timeout <ms>', 'Default step timeout in ms', parseInt)
   .option('--json', 'Output result as JSON (for CI pipelines)')
   .action(async (prompt: string, opts: {
     model?: string;
@@ -29,6 +31,8 @@ export const runCommand = new Command('run')
     dryRun?: boolean;
     watch?: string;
     config?: string;
+    var: Record<string, string>;
+    timeout?: number;
     json?: boolean;
   }) => {
     const config = loadConfig(opts.config);
@@ -222,3 +226,12 @@ export const runCommand = new Command('run')
       process.exit(1);
     }
   });
+
+function collectVar(val: string, acc: Record<string, string>): Record<string, string> {
+  const eq = val.indexOf('=');
+  if (eq === -1) {
+    throw new Error(`Invalid --var format: "${val}". Expected key=value`);
+  }
+  acc[val.slice(0, eq)] = val.slice(eq + 1);
+  return acc;
+}

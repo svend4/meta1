@@ -13,6 +13,8 @@ export interface CreateFileStep {
   determinism: 'guaranteed';
   /** Step IDs this step depends on. Empty or absent = depends on none (can run immediately). */
   depends_on?: string[];
+  /** Maximum execution time in milliseconds. Step is aborted if exceeded. */
+  timeout_ms?: number;
 }
 
 /** A command execution step */
@@ -25,6 +27,8 @@ export interface RunCommandStep {
   determinism: 'guaranteed' | 'best_effort';
   /** Step IDs this step depends on. Empty or absent = depends on none (can run immediately). */
   depends_on?: string[];
+  /** Maximum execution time in milliseconds. Step is aborted if exceeded. */
+  timeout_ms?: number;
 }
 
 export type Step = CreateFileStep | RunCommandStep;
@@ -54,6 +58,8 @@ export interface ExecutionPlanV3 extends ExecutionPlan {
   protected_surface?: ProtectedSurface;
   lineage?: PlanLineage;
   plan_signature?: PlanIOSignature;
+  /** Template variables: keys are variable names, values are defaults. Resolved at execution time. */
+  variables?: Record<string, string>;
 }
 
 /** Check if a plan is v3.0 */

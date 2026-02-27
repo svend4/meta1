@@ -9,9 +9,33 @@ export interface ExecutionResult {
   artifactHashes: `sha256:${string}`[];
 }
 
+/** Lifecycle hooks called during plan execution */
+export interface ExecutionHooks {
+  onStepStart?: (step: Step, index: number) => void | Promise<void>;
+  onStepComplete?: (step: Step, result: StepResult) => void | Promise<void>;
+  onStepFailed?: (step: Step, error: string) => void | Promise<void>;
+}
+
+/** Progress event emitted during execution */
+export interface ProgressEvent {
+  type: 'step_start' | 'step_complete' | 'step_failed' | 'step_skipped';
+  stepId: string;
+  stepIndex: number;
+  totalSteps: number;
+  completedSteps: number;
+  durationMs?: number;
+  error?: string;
+}
+
 export interface ExecutionOptions {
   /** Maximum number of steps to run concurrently in parallel mode. Default: Infinity (no limit). */
   maxConcurrency?: number;
+  /** Default timeout for steps that don't specify their own timeout_ms. */
+  defaultTimeoutMs?: number;
+  /** Lifecycle hooks for step events. */
+  hooks?: ExecutionHooks;
+  /** Progress callback invoked for each step lifecycle event. */
+  onProgress?: (event: ProgressEvent) => void;
 }
 
 /**
@@ -28,9 +52,9 @@ export async function executePlan(
   options?: ExecutionOptions,
 ): Promise<ExecutionResult> {
   if (plan.execution_mode === 'parallel') {
-    return executePlanParallel(plan, sandbox, logger, runId, options?.maxConcurrency);
+    return executePlanParallel(plan, sandbox, logger, runId, options);
   }
-  return executePlanSequential(plan, sandbox, logger, runId);
+  return executePlanSequential(plan, sandbox, logger, runId, options);
 }
 
 // ── Sequential executor (original behavior) ──
@@ -40,10 +64,13 @@ async function executePlanSequential(
   sandbox: Sandbox,
   logger: EventLogger,
   runId: string,
+  options?: ExecutionOptions,
 ): Promise<ExecutionResult> {
   const stepResults: StepResult[] = [];
   const artifactHashes: `sha256:${string}`[] = [];
   let failed = false;
+  let completedCount = 0;
+  const totalSteps = plan.steps.length;
 
   for (let i = 0; i < plan.steps.length; i++) {
     const step = plan.steps[i];
@@ -56,6 +83,13 @@ async function executePlanSequential(
         status: 'skipped',
         determinism: step.determinism,
       });
+      options?.onProgress?.({
+        type: 'step_skipped',
+        stepId: step.step_id,
+        stepIndex: i,
+        totalSteps,
+        completedSteps: completedCount,
+      });
       continue;
     }
 
@@ -65,10 +99,20 @@ async function executePlanSequential(
       step_index: i,
     }));
 
+    await options?.hooks?.onStepStart?.(step, i);
+    options?.onProgress?.({
+      type: 'step_start',
+      stepId: step.step_id,
+      stepIndex: i,
+      totalSteps,
+      completedSteps: completedCount,
+    });
+
     const start = Date.now();
 
     try {
-      const result = await executeStep(step, sandbox);
+      const timeout = step.timeout_ms ?? options?.defaultTimeoutMs;
+      const result = await executeStepWithTimeout(step, sandbox, timeout);
       const duration = Date.now() - start;
 
       logger.log(createEvent('step_complete', runId, {
@@ -84,7 +128,7 @@ async function executePlanSequential(
 
       artifactHashes.push(result.artifactHash);
 
-      stepResults.push({
+      const stepResult: StepResult = {
         step_id: step.step_id,
         type: step.type,
         description: step.description,
@@ -92,6 +136,18 @@ async function executePlanSequential(
         artifact_hash: result.artifactHash,
         duration_ms: duration,
         determinism: step.determinism,
+      };
+
+      stepResults.push(stepResult);
+      completedCount++;
+      await options?.hooks?.onStepComplete?.(step, stepResult);
+      options?.onProgress?.({
+        type: 'step_complete',
+        stepId: step.step_id,
+        stepIndex: i,
+        totalSteps,
+        completedSteps: completedCount,
+        durationMs: duration,
       });
     } catch (err: unknown) {
       const duration = Date.now() - start;
@@ -113,6 +169,17 @@ async function executePlanSequential(
         determinism: step.determinism,
         error,
         exit_code: exitCode,
+      });
+
+      await options?.hooks?.onStepFailed?.(step, error);
+      options?.onProgress?.({
+        type: 'step_failed',
+        stepId: step.step_id,
+        stepIndex: i,
+        totalSteps,
+        completedSteps: completedCount,
+        durationMs: duration,
+        error,
       });
 
       failed = true;
@@ -236,12 +303,15 @@ async function executePlanParallel(
   sandbox: Sandbox,
   logger: EventLogger,
   runId: string,
-  maxConcurrency?: number,
+  options?: ExecutionOptions,
 ): Promise<ExecutionResult> {
   const steps = plan.steps;
   const stepMap = new Map(steps.map((s) => [s.step_id, s]));
   const stepIndex = new Map(steps.map((s, i) => [s.step_id, i]));
+  const maxConcurrency = options?.maxConcurrency;
   const concurrencyLimit = maxConcurrency && maxConcurrency > 0 ? maxConcurrency : Infinity;
+  const totalSteps = steps.length;
+  let completedCount = 0;
 
   const { dependents, inDegree } = buildDependencyGraph(steps);
 
@@ -279,6 +349,13 @@ async function executePlanParallel(
           status: 'skipped',
           determinism: step.determinism,
         });
+        options?.onProgress?.({
+          type: 'step_skipped',
+          stepId,
+          stepIndex: idx,
+          totalSteps,
+          completedSteps: completedCount,
+        });
         return;
       }
 
@@ -288,10 +365,20 @@ async function executePlanParallel(
         step_index: idx,
       }));
 
+      await options?.hooks?.onStepStart?.(step, idx);
+      options?.onProgress?.({
+        type: 'step_start',
+        stepId,
+        stepIndex: idx,
+        totalSteps,
+        completedSteps: completedCount,
+      });
+
       const start = Date.now();
 
       try {
-        const result = await executeStep(step, sandbox);
+        const timeout = step.timeout_ms ?? options?.defaultTimeoutMs;
+        const result = await executeStepWithTimeout(step, sandbox, timeout);
         const duration = Date.now() - start;
 
         logger.log(createEvent('step_complete', runId, {
@@ -308,7 +395,7 @@ async function executePlanParallel(
         hashMap.set(stepId, result.artifactHash);
         completedSet.add(stepId);
 
-        resultMap.set(stepId, {
+        const stepResult: StepResult = {
           step_id: stepId,
           type: step.type,
           description: step.description,
@@ -316,6 +403,18 @@ async function executePlanParallel(
           artifact_hash: result.artifactHash,
           duration_ms: duration,
           determinism: step.determinism,
+        };
+
+        resultMap.set(stepId, stepResult);
+        completedCount++;
+        await options?.hooks?.onStepComplete?.(step, stepResult);
+        options?.onProgress?.({
+          type: 'step_complete',
+          stepId,
+          stepIndex: idx,
+          totalSteps,
+          completedSteps: completedCount,
+          durationMs: duration,
         });
       } catch (err: unknown) {
         const duration = Date.now() - start;
@@ -339,6 +438,17 @@ async function executePlanParallel(
           determinism: step.determinism,
           error,
           exit_code: exitCode,
+        });
+
+        await options?.hooks?.onStepFailed?.(step, error);
+        options?.onProgress?.({
+          type: 'step_failed',
+          stepId,
+          stepIndex: idx,
+          totalSteps,
+          completedSteps: completedCount,
+          durationMs: duration,
+          error,
         });
       }
     });
@@ -379,6 +489,36 @@ interface StepOutput {
   artifactHash: `sha256:${string}`;
 }
 
+/**
+ * Execute a step with optional timeout enforcement.
+ * If timeout is specified and exceeded, throws a timeout error.
+ */
+async function executeStepWithTimeout(
+  step: Step,
+  sandbox: Sandbox,
+  timeoutMs?: number,
+): Promise<StepOutput> {
+  if (!timeoutMs || timeoutMs <= 0) {
+    return executeStep(step, sandbox);
+  }
+
+  return new Promise<StepOutput>((resolve, reject) => {
+    const timer = setTimeout(() => {
+      reject(new StepTimeoutError(step.step_id, timeoutMs));
+    }, timeoutMs);
+
+    executeStep(step, sandbox)
+      .then((result) => {
+        clearTimeout(timer);
+        resolve(result);
+      })
+      .catch((err) => {
+        clearTimeout(timer);
+        reject(err);
+      });
+  });
+}
+
 async function executeStep(step: Step, sandbox: Sandbox): Promise<StepOutput> {
   switch (step.type) {
     case 'create_file':
@@ -413,4 +553,17 @@ async function executeRunCommand(
 
   const artifactHash = hashString(result.stdout);
   return { artifactHash };
+}
+
+/** Error thrown when a step exceeds its timeout. */
+export class StepTimeoutError extends Error {
+  readonly stepId: string;
+  readonly timeoutMs: number;
+
+  constructor(stepId: string, timeoutMs: number) {
+    super(`Step "${stepId}" timed out after ${timeoutMs}ms`);
+    this.name = 'StepTimeoutError';
+    this.stepId = stepId;
+    this.timeoutMs = timeoutMs;
+  }
 }

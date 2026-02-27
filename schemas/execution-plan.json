@@ -69,6 +69,11 @@
     "plan_signature": {
       "$ref": "plan-signature.json",
       "description": "I/O contract — what this plan expects and produces (v3.0, informational)"
+    },
+    "variables": {
+      "type": "object",
+      "description": "Template variables with default values. Keys are variable names, values are defaults.",
+      "additionalProperties": { "type": "string" }
     }
   },
   "required": ["plan_id", "steps"],
@@ -108,6 +113,16 @@
           "type": "string",
           "const": "guaranteed",
           "description": "File creation is always deterministic"
+        },
+        "depends_on": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Step IDs this step depends on"
+        },
+        "timeout_ms": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Maximum execution time in milliseconds"
         }
       },
       "required": ["step_id", "type", "description", "path", "content", "determinism"]
@@ -140,6 +155,16 @@
           "type": "string",
           "enum": ["guaranteed", "best_effort"],
           "description": "Whether this command produces deterministic output"
+        },
+        "depends_on": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Step IDs this step depends on"
+        },
+        "timeout_ms": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Maximum execution time in milliseconds"
         }
       },
       "required": ["step_id", "type", "description", "command", "args", "determinism"]

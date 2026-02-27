@@ -7,8 +7,8 @@ export { validateExecutionPlan, assertValidPlan, validateTaskSpecData, validateE
 export { EventLogger, createEvent } from './core/logger.js';
 export { lookupPlan, storePlan, clearCache, clearExpired, getCacheStats, DEFAULT_CACHE_TTL_MS } from './core/plan-cache.js';
 export { generatePlan, SYSTEM_PROMPT_HASH } from './core/planner.js';
-export { executePlan, buildDependencyGraph } from './core/executor.js';
-export type { ExecutionOptions } from './core/executor.js';
+export { executePlan, buildDependencyGraph, StepTimeoutError } from './core/executor.js';
+export type { ExecutionOptions, ExecutionHooks, ProgressEvent } from './core/executor.js';
 export { run, executeFromFile } from './core/runner.js';
 export { replay } from './core/replayer.js';
 
@@ -61,6 +61,11 @@ export type { CheckResult, CheckStatus, ValidationReport } from './core/prefligh
 export { findCleanupTargets, executeCleanup, cleanup } from './core/retention.js';
 export type { CleanupTarget, CleanupResult, CleanupOptions } from './core/retention.js';
 export { watchDirectory, matchGlob } from './core/watcher.js';
+
+// v3.2: Templates, Plan Diff
+export { extractVariables, validateVariables, applyTemplate } from './core/template.js';
+export { diffPlans, formatPlanDiff } from './core/plan-diff.js';
+export type { PlanDiffResult, StepDiff, FieldDiff, ChangeType } from './core/plan-diff.js';
 
 // Sandboxes
 export type { Sandbox, ExecResult } from './sandbox/types.js';

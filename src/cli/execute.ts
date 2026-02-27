@@ -5,6 +5,7 @@ import { resolve } from 'node:path';
 import chalk from 'chalk';
 import { executeFromFile } from '../core/runner.js';
 import { analyzePlan } from '../core/dry-run.js';
+import { applyTemplate, extractVariables } from '../core/template.js';
 import { LocalSandbox } from '../sandbox/local.js';
 import { getDefaultWorkspace } from '../core/paths.js';
 
@@ -13,8 +14,16 @@ export const executeCommand = new Command('execute')
   .argument('<plan_file>', 'Path to plan JSON file')
   .option('--workspace <dir>', 'Output directory')
   .option('--dry-run', 'Preview execution without running')
+  .option('--var <key=value...>', 'Template variable (repeatable)', collectExecuteVar, {})
+  .option('--timeout <ms>', 'Default step timeout in ms', parseInt)
   .option('--json', 'Output as JSON')
-  .action(async (planFile: string, opts: { workspace?: string; dryRun?: boolean; json?: boolean }) => {
+  .action(async (planFile: string, opts: {
+    workspace?: string;
+    dryRun?: boolean;
+    var: Record<string, string>;
+    timeout?: number;
+    json?: boolean;
+  }) => {
     const planPath = resolve(planFile);
     const workspace = opts.workspace
       ? resolve(opts.workspace)
@@ -22,7 +31,11 @@ export const executeCommand = new Command('execute')
 
     if (opts.dryRun) {
       try {
-        const plan = JSON.parse(readFileSync(planPath, 'utf8'));
+        let plan = JSON.parse(readFileSync(planPath, 'utf8'));
+        const vars = extractVariables(plan);
+        if (vars.length > 0 || Object.keys(opts.var).length > 0) {
+          plan = applyTemplate(plan, opts.var);
+        }
         const result = analyzePlan(plan);
 
         if (opts.json) {
@@ -91,3 +104,12 @@ export const executeCommand = new Command('execute')
       process.exit(1);
     }
   });
+
+function collectExecuteVar(val: string, acc: Record<string, string>): Record<string, string> {
+  const eq = val.indexOf('=');
+  if (eq === -1) {
+    throw new Error(`Invalid --var format: "${val}". Expected key=value`);
+  }
+  acc[val.slice(0, eq)] = val.slice(eq + 1);
+  return acc;
+}
