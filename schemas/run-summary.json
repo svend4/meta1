@@ -1,0 +1,112 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://continuum.dev/schemas/run-summary.json",
+  "title": "RunSummary",
+  "description": "Summary of a completed (or failed) run, stored alongside the event log",
+  "type": "object",
+  "properties": {
+    "run_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "task_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "prompt": {
+      "type": "string",
+      "description": "Original task prompt"
+    },
+    "status": {
+      "type": "string",
+      "enum": ["completed", "failed", "verified", "assertion_failed", "benign_drift", "healed"]
+    },
+    "started_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "completed_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "duration_ms": {
+      "type": "integer"
+    },
+    "plan": {
+      "$ref": "execution-plan.json",
+      "description": "The execution plan that was used"
+    },
+    "plan_hash": {
+      "type": "string",
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    },
+    "plan_source": {
+      "type": "string",
+      "enum": ["llm", "cache", "file"],
+      "description": "Where the plan came from"
+    },
+    "cache_key": {
+      "type": "string",
+      "pattern": "^sha256:[a-f0-9]{64}$",
+      "description": "Plan cache key, if applicable"
+    },
+    "run_hash": {
+      "type": "string",
+      "pattern": "^sha256:[a-f0-9]{64}$",
+      "description": "Hash of the entire run (all artifact hashes combined)"
+    },
+    "steps": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "step_id": { "type": "string" },
+          "type": { "type": "string", "enum": ["create_file", "run_command"] },
+          "description": { "type": "string" },
+          "status": { "type": "string", "enum": ["completed", "failed", "skipped"] },
+          "artifact_hash": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" },
+          "duration_ms": { "type": "integer" },
+          "determinism": { "type": "string", "enum": ["guaranteed", "best_effort"] },
+          "error": { "type": "string" },
+          "exit_code": { "type": "integer" }
+        },
+        "required": ["step_id", "type", "status"]
+      }
+    },
+    "environment": {
+      "type": "object",
+      "properties": {
+        "node_version": { "type": "string" },
+        "npm_version": { "type": "string" },
+        "platform": { "type": "string" },
+        "arch": { "type": "string" },
+        "sandbox_image_digest": {
+          "type": "string",
+          "description": "Docker image digest (sha256) of sandbox at time of run"
+        }
+      }
+    },
+    "workspace": {
+      "type": "string",
+      "description": "Path to the workspace directory"
+    },
+    "assertions_passed": {
+      "type": "integer",
+      "description": "Number of assertions that passed (v3.0)"
+    },
+    "assertions_total": {
+      "type": "integer",
+      "description": "Total number of assertions evaluated (v3.0)"
+    },
+    "assertion_results": {
+      "type": "array",
+      "items": { "$ref": "assertion-result.json" },
+      "description": "Detailed assertion results (v3.0)"
+    },
+    "dependency_fingerprint": {
+      "$ref": "dependency-fingerprint.json",
+      "description": "Environment fingerprint captured at execution time (v3.0)"
+    }
+  },
+  "required": ["run_id", "task_id", "prompt", "status", "started_at", "plan", "plan_hash", "steps"]
+}

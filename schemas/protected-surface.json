@@ -1,0 +1,20 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://continuum.dev/schemas/protected-surface.json",
+  "title": "ProtectedSurface",
+  "description": "Defines which artifacts require strict integrity verification vs allow benign drift",
+  "type": "object",
+  "properties": {
+    "protected_paths": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Glob patterns for files that must be integrity-verified (hash match or explicit new generation)"
+    },
+    "driftable_paths": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Glob patterns for files where benign drift is acceptable (hashes differ but assertions pass)"
+    }
+  },
+  "required": ["protected_paths", "driftable_paths"]
+}

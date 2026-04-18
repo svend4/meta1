@@ -1,0 +1,68 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://continuum.dev/schemas/repair-request.json",
+  "title": "RepairRequest",
+  "description": "Structured request sent to the LLM Repair Compiler (Level 3)",
+  "type": "object",
+  "properties": {
+    "original_plan": {
+      "$ref": "execution-plan.json"
+    },
+    "drift_vectors": {
+      "type": "array",
+      "items": { "$ref": "drift-vector.json" }
+    },
+    "failed_assertions": {
+      "type": "array",
+      "items": { "$ref": "assertion-result.json" }
+    },
+    "environment_diff": {
+      "type": "object",
+      "properties": {
+        "original": { "$ref": "dependency-fingerprint.json" },
+        "current": { "$ref": "dependency-fingerprint.json" }
+      },
+      "required": ["original", "current"]
+    },
+    "constraints": {
+      "type": "object",
+      "properties": {
+        "max_steps_modified": { "type": "integer", "default": 3 },
+        "max_repair_attempts": { "type": "integer", "default": 1 },
+        "preserve_step_ids": { "type": "boolean", "default": true },
+        "allowed_mutations": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": ["update_version", "modify_content", "modify_command", "update_assertion"]
+          }
+        },
+        "budget": {
+          "type": "object",
+          "properties": {
+            "max_tokens": { "type": "integer", "default": 8192 },
+            "max_cost_usd": { "type": "number", "default": 0.50 },
+            "timeout_ms": { "type": "integer", "default": 30000 }
+          }
+        }
+      },
+      "required": ["max_steps_modified", "max_repair_attempts", "preserve_step_ids", "allowed_mutations", "budget"]
+    },
+    "context_snippets": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "step_id": { "type": "string" },
+          "file_path": { "type": "string" },
+          "before_content": { "type": "string" },
+          "after_content": { "type": "string" },
+          "diff": { "type": "string" },
+          "error_output": { "type": "string" }
+        },
+        "required": ["step_id"]
+      }
+    }
+  },
+  "required": ["original_plan", "drift_vectors", "failed_assertions", "constraints"]
+}

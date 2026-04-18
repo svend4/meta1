@@ -1,0 +1,77 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://continuum.dev/schemas/drift-vector.json",
+  "title": "DriftVector",
+  "description": "Structured description of how reality diverged from expected state",
+  "type": "object",
+  "properties": {
+    "drift_id": {
+      "type": "string",
+      "description": "Unique identifier for this drift vector"
+    },
+    "detected_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "run_id": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Current replay run"
+    },
+    "source_run_id": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Original run being replayed"
+    },
+    "category": {
+      "type": "string",
+      "enum": [
+        "environment",
+        "dependency",
+        "artifact",
+        "artifact_protected",
+        "assertion_stable",
+        "assertion_flaky",
+        "assertion_environmental",
+        "permission",
+        "timeout",
+        "missing_input",
+        "tool_unavailable"
+      ]
+    },
+    "severity": {
+      "type": "string",
+      "enum": ["blocking", "degraded", "cosmetic"]
+    },
+    "repairable": {
+      "type": "boolean"
+    },
+    "repair_level": {
+      "type": ["integer", "null"],
+      "enum": [1, 2, 3, null],
+      "description": "Which cascade level can fix this"
+    },
+    "details": {
+      "type": "object",
+      "properties": {
+        "step_id": { "type": "string" },
+        "step_order": { "type": "integer" },
+        "expected": { "type": "string" },
+        "actual": { "type": "string" },
+        "diff": { "type": "string" },
+        "env_key": { "type": "string" },
+        "frozen_value": { "type": "string" },
+        "current_value": { "type": "string" },
+        "package_name": { "type": "string" },
+        "expected_version": { "type": "string" },
+        "resolved_version": { "type": "string" },
+        "assertion_id": { "type": "string" },
+        "assertion_type": { "type": "string" },
+        "assertion_stability": { "type": "string" },
+        "protected_path": { "type": "string" }
+      },
+      "required": ["step_id", "step_order", "expected", "actual"]
+    }
+  },
+  "required": ["drift_id", "detected_at", "run_id", "source_run_id", "category", "severity", "repairable", "repair_level", "details"]
+}
